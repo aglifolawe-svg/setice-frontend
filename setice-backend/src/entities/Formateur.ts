@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
+  Column,
 } from 'typeorm'
 import { User } from './User'
 
@@ -10,6 +11,9 @@ import { User } from './User'
 export class Formateur {
   @PrimaryGeneratedColumn('uuid')
   id!: string
+
+  @Column({ type: 'varchar', nullable: true })
+  specialite: string | null = null
 
   // Un formateur = un user
   @OneToOne(() => User, { onDelete: 'CASCADE' })

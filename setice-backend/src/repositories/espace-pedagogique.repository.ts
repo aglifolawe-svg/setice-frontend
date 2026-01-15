@@ -1,5 +1,6 @@
 import { getDataSource } from '@/src/lib/db'
 import { EspacePedagogique } from '@/src/entities/EspacePedagogique'
+import { Etudiant } from '@/src/entities/Etudiant'
 
 export const espacePedagogiqueRepository = {
   async create(data: {
@@ -18,60 +19,68 @@ export const espacePedagogiqueRepository = {
   async findAll() {
     const db = await getDataSource()
     return db.getRepository(EspacePedagogique).find({
-      relations: ['promotion', 'matiere', 'formateur', 'formateur.user'],
-      order: {
-        createdAt: 'DESC'
-      }
+      relations: {
+        promotion: true,
+        matiere: true,
+        formateur: { user: true },
+        etudiants: { user: true },
+      },
+      order: { createdAt: 'DESC' },
     })
-  },
-  async assignFormateur(espacePedagogiqueId: string, formateurId: string) {
-    const db = await getDataSource()
-    const espaceRepo = db.getRepository(EspacePedagogique)
-    
-    // Récupérer l'espace pédagogique
-    const espace = await espaceRepo.findOne({
-      where: { id: espacePedagogiqueId }
-    })
-    
-    if (!espace) {
-      throw new Error('ESPACE_NOT_FOUND')
-    }
-    
-    // Mettre à jour le formateur
-    espace.formateur = { id: formateurId } as any
-    
-    return espaceRepo.save(espace)
   },
 
-  async addEtudiants(espacePedagogiqueId: string, etudiantIds: string[]) {
+  async findById(id: string) {
+    const db = await getDataSource()
+    return db.getRepository(EspacePedagogique).findOne({
+      where: { id },
+      relations: {
+        promotion: true,
+        matiere: true,
+        formateur: { user: true },
+        etudiants: { user: true },
+      },
+    })
+  },
+
+  async assignFormateur(espaceId: string, formateurId: string) {
+    const db = await getDataSource()
+    const repo = db.getRepository(EspacePedagogique)
+
+    const espace = await repo.findOne({ where: { id: espaceId } })
+    if (!espace) throw new Error('ESPACE_NOT_FOUND')
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    espace.formateur = { id: formateurId } as any
+    return repo.save(espace)
+  },
+
+  async addEtudiants(espaceId: string, etudiantIds: string[]) {
     const db = await getDataSource()
     const espaceRepo = db.getRepository(EspacePedagogique)
-    
-    // Récupérer l'espace avec ses étudiants actuels
+    const etudiantRepo = db.getRepository(Etudiant)
+
     const espace = await espaceRepo.findOne({
-      where: { id: espacePedagogiqueId },
-      relations: ['etudiants']
+      where: { id: espaceId },
+      relations: ['etudiants'],
     })
-    
-    if (!espace) {
-      throw new Error('ESPACE_NOT_FOUND')
-    }
-    
-    // Récupérer les IDs déjà inscrits
-    const existingIds = espace.etudiants?.map(e => e.id) || []
-    
-    // Filtrer les nouveaux étudiants (éviter les doublons)
+    if (!espace) throw new Error('ESPACE_NOT_FOUND')
+
+    const existingIds = espace.etudiants.map(e => e.id)
     const newIds = etudiantIds.filter(id => !existingIds.includes(id))
-    
-    // Ajouter les nouveaux étudiants
-    const nouveauxEtudiants = newIds.map(id => ({ id } as any))
-    espace.etudiants = [...(espace.etudiants || []), ...nouveauxEtudiants]
-    
+
+    if (newIds.length === 0) {
+      return { inscrits: 0, dejaInscrits: etudiantIds.length }
+    }
+
+    const nouveaux = await etudiantRepo.findByIds(newIds)
+    espace.etudiants.push(...nouveaux)
+
     await espaceRepo.save(espace)
-    
+
     return {
       inscrits: newIds.length,
-      dejaInscrits: etudiantIds.length - newIds.length
+      dejaInscrits: etudiantIds.length - newIds.length,
     }
-  }
+  },
+
 }

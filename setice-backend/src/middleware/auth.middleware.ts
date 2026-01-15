@@ -22,6 +22,7 @@ export function verifyToken(authHeader: string | null): JwtPayload {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
     return decoded
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     throw new Error('INVALID_TOKEN')
   }

@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals'
 // CONFIGURATION
 // ====================================
 
-const BASE_URL = 'http://localhost:3000/api/v1'
+const BASE_URL = 'http://localhost:3000/api'
 
 // Données de test (du topo)
 const DIRECTEUR_CREDENTIALS = {
@@ -37,9 +37,11 @@ let espacePedagogiqueId: string = ''
 async function makeRequest(
   method: string,
   endpoint: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body?: any,
   useAuth: boolean = false
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const headers: any = {
     'Content-Type': 'application/json',
   }

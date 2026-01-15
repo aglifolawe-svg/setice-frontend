@@ -7,6 +7,7 @@ export interface CreateFormateurInput {
   nom: string
   prenom: string
   email: string
+  specialite?: string
 }
 
 export async function createFormateur(input: CreateFormateurInput) {
@@ -43,6 +44,7 @@ export async function createFormateur(input: CreateFormateurInput) {
   // 4️⃣ Créer le Formateur lié au User
   const formateur = formateurRepo.create({
     user,
+    specialite: input.specialite || null,
   } as Partial<Formateur>)
 
   await formateurRepo.save(formateur)
@@ -59,5 +61,31 @@ export async function createFormateur(input: CreateFormateurInput) {
       motDePasseTemporaire: true,
       temporaryPassword: tempPassword, // à afficher UNE SEULE FOIS
     },
+    specialite: formateur.specialite
   }
+}
+// ✅ Récupérer tous les formateurs
+export async function getFormateurs() {
+  const db = await getDataSource()
+  const formateurRepo = db.getRepository(Formateur)
+
+  // On récupère le formateur avec la relation User
+  const formateurs = await formateurRepo.find({
+    relations: ['user'], // important pour avoir nom, prénom, email
+  })
+
+  // Formater pour le frontend
+  return formateurs.map((f) => ({
+    id: f.id,
+    actif: f.user.motDePasseTemporaire ? false : true, // exemple de statut, à adapter
+    user: {
+      id: f.user.id,
+      nom: f.user.nom,
+      prenom: f.user.prenom,
+      email: f.user.email,
+      role: f.user.role,
+    },
+    createdAt: f.user.createdAt,
+    specialite: f.specialite || null, // si tu ajoutes spécialité plus tard
+  }))
 }

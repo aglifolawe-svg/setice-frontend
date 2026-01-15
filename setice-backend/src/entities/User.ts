@@ -44,4 +44,6 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt!: Date
+  activationTokenExpires: Date | undefined
+  activationToken: string | undefined
 }

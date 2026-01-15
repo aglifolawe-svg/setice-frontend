@@ -2,10 +2,13 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   ManyToOne,
+  ManyToMany,
   JoinColumn,
+  Column,
 } from 'typeorm'
 import type { Promotion } from './Promotion'
 import { User } from './User'
+import { EspacePedagogique } from './EspacePedagogique'
 
 @Entity('etudiants')
 export class Etudiant {
@@ -29,4 +32,19 @@ export class Etudiant {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn()
   user!: User
+
+  @Column({ unique: true })
+  matricule!: string
+
+  @Column({ nullable: true })
+  activationToken?: string
+
+  @Column({ type: 'timestamp', nullable: true })
+  activationTokenExpires?: Date
+  // ✅ RELATION INVERSE MANQUANTE
+  @ManyToMany(
+    () => EspacePedagogique,
+    (espace) => espace.etudiants
+  )
+  espacesPedagogiques!: EspacePedagogique[]
 }

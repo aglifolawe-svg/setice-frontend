@@ -140,12 +140,16 @@ export async function addEtudiantsFromPromotion(
   // Récupérer tous les étudiants de la promotion
   const etudiantRepo = db.getRepository(Etudiant)
   const etudiants = await etudiantRepo.find({
-    where: { promotion: { id: promotionId } }
+    where: { promotion: { id: promotionId } },
+    relations: ['user']
   })
   
   if (etudiants.length === 0) {
     throw new Error('NO_STUDENTS_IN_PROMOTION')
   }
+  
+
+  
   
   // Inscrire les étudiants via le repository
   const etudiantIds = etudiants.map(e => e.id)
@@ -156,4 +160,14 @@ export async function addEtudiantsFromPromotion(
     message: `${result.inscrits} étudiant(s) inscrit(s) avec succès`,
     data: result
   }
+}
+
+export async function getEspacePedagogique(id: string) {
+  const espace = await espacePedagogiqueRepository.findById(id)
+
+  if (!espace) {
+    throw new Error('ESPACE_NOT_FOUND')
+  }
+
+  return espace
 }

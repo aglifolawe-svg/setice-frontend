@@ -12,3 +12,7 @@ if (exists) throw new Error('PROMOTION_ALREADY_EXISTS')
 
 return promotionRepository.create(input)
 }
+
+export async function getPromotions() {
+  return promotionRepository.findAll()
+}
