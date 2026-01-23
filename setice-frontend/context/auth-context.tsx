@@ -58,13 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 🔀 Redirection par rôle
     switch (user.role) {
       case 'DIRECTEUR_ETUDES':
-        router.push('/dashboard/directeur')
+        router.push('/dashboard')
         break
       case 'FORMATEUR':
-        router.push('/dashboard/formateur')
+        router.push('/formateur')
         break
       case 'ETUDIANT':
-        router.push('/dashboard/etudiant')
+        router.push('/etudiant')
         break
       default:
         router.push('/dashboard')
@@ -120,5 +120,39 @@ export function useAuth(allowedRoles?: Role[]) {
   return {
     ...context,
     hasAccess,
+  }
+}
+
+// ✅ Hook useRequireRole - version corrigée
+export function useRequireRole(allowedRoles?: Role[]) {
+  const router = useRouter()
+  const context = useContext(AuthContext)
+  
+  if (!context) {
+    throw new Error('useRequireRole must be used within an AuthProvider')
+  }
+
+  const { user, isLoading } = context
+  
+  // Calculer hasAccess comme un booléen
+  const hasAccess = useMemo(() => {
+    if (!user) return false
+    if (!allowedRoles || allowedRoles.length === 0) return true
+    return allowedRoles.includes(user.role as Role)
+  }, [user, allowedRoles])
+
+  // Redirection automatique
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login')
+    } else if (!isLoading && user && !hasAccess) {
+      router.push('/dashboard')
+    }
+  }, [isLoading, user, hasAccess, router])
+
+  return {
+    user,
+    isLoading,
+    hasAccess, // ✅ C'est un booléen, pas une fonction
   }
 }

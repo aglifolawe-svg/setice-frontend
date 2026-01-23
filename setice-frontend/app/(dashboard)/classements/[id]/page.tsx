@@ -11,9 +11,8 @@ import {
   TrendingUp,
   Download,
 } from 'lucide-react'
-import { useRequireRole } from '@/contexts/auth-context'
 import { api } from '@/lib/api'
-import { Role, type Promotion, type Etudiant } from '@/lib/types'
+import { type Promotion, type Etudiant } from '@/types/index'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -78,7 +77,6 @@ const getRankBadge = (rank: number) => {
 export default function ClassementDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { isLoading: authLoading, hasAccess } = useRequireRole([Role.DIRECTEUR_ETUDES])
   
   const [classementData, setClassementData] = useState<ClassementData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -88,21 +86,28 @@ export default function ClassementDetailPage() {
   useEffect(() => {
     const fetchClassement = async () => {
       try {
-        const data = await api.getClassement(promotionId)
-        setClassementData(data)
+        // ✅ CORRECTION: Utiliser getClassementPromotion au lieu de getClassement
+        const response = await api.getClassementPromotion(promotionId)
+        
+        if (response.success && response.data) {
+          setClassementData(response.data)
+        } else {
+          toast.error('Erreur lors du chargement du classement')
+          router.push('/directeur/classements')
+        }
       } catch (error) {
         console.error('Error fetching classement:', error)
         toast.error('Erreur lors du chargement du classement')
-        router.push('/dashboard/directeur/classements')
+        router.push('/directeur/classements')
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (hasAccess && promotionId) {
+    if (promotionId) {
       fetchClassement()
     }
-  }, [hasAccess, promotionId, router])
+  }, [promotionId, router])
 
   const handleExportCSV = () => {
     if (!classementData) return
@@ -126,14 +131,14 @@ export default function ClassementDetailPage() {
     link.setAttribute('href', url)
     link.setAttribute(
       'download',
-      `classement_${classementData.promotion.nom}_${new Date().toISOString().split('T')[0]}.csv`
+      `classement_${classementData.promotion.libelle}_${new Date().toISOString().split('T')[0]}.csv`
     )
     link.click()
     URL.revokeObjectURL(url)
-    toast.success('Export CSV telecharge')
+    toast.success('Export CSV téléchargé')
   }
 
-  if (authLoading || !hasAccess || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <Spinner className="h-8 w-8" />
@@ -144,7 +149,7 @@ export default function ClassementDetailPage() {
   if (!classementData) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">Classement non trouve</p>
+        <p className="text-muted-foreground">Classement non trouvé</p>
       </div>
     )
   }
@@ -160,20 +165,20 @@ export default function ClassementDetailPage() {
   const minMoyenne = classement.length > 0 ? Math.min(...classement.map((e) => e.moyenne)) : 0
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild className="mt-1">
-            <Link href="/dashboard/directeur/classements">
+            <Link href="/directeur/classements">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
-              <Trophy className="h-6 w-6 text-teal-600" />
-              Classement - {promotion.nom}
+            <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+              <Trophy className="h-6 w-6 text-primary" />
+              Classement - {promotion.libelle}
             </h1>
-            <p className="text-muted-foreground">Annee {promotion.annee}</p>
+            <p className="mt-1 text-base text-muted-foreground">Année {promotion.annee}</p>
           </div>
         </div>
         <Button variant="outline" onClick={handleExportCSV}>
@@ -183,13 +188,13 @@ export default function ClassementDetailPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Etudiants classes
+              Étudiants classés
             </CardTitle>
-            <User className="h-4 w-4 text-teal-600" />
+            <User className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{classement.length}</div>
@@ -201,7 +206,7 @@ export default function ClassementDetailPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Moyenne promotion
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-teal-600" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{moyennePromo.toFixed(2)}/20</div>
@@ -275,7 +280,7 @@ export default function ClassementDetailPage() {
                   {classement[0]?.etudiant?.user?.prenom}{' '}
                   {classement[0]?.etudiant?.user?.nom}
                 </p>
-                <p className="text-sm font-bold text-teal-600">
+                <p className="text-sm font-bold text-primary">
                   {classement[0]?.moyenne.toFixed(2)}/20
                 </p>
               </div>
@@ -306,7 +311,7 @@ export default function ClassementDetailPage() {
         <CardHeader>
           <CardTitle>Classement complet</CardTitle>
           <CardDescription>
-            Classement base sur la moyenne generale de chaque etudiant
+            Classement basé sur la moyenne générale de chaque étudiant
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -314,7 +319,7 @@ export default function ClassementDetailPage() {
             <div className="py-12 text-center">
               <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="mt-4 text-muted-foreground">
-                Aucun etudiant evalue dans cette promotion
+                Aucun étudiant évalué dans cette promotion
               </p>
             </div>
           ) : (
@@ -323,11 +328,11 @@ export default function ClassementDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-16">Rang</TableHead>
-                    <TableHead>Etudiant</TableHead>
+                    <TableHead>Étudiant</TableHead>
                     <TableHead>Matricule</TableHead>
                     <TableHead className="text-center">Moyenne</TableHead>
                     <TableHead className="text-center">Points</TableHead>
-                    <TableHead className="text-center">Evaluations</TableHead>
+                    <TableHead className="text-center">Évaluations</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
