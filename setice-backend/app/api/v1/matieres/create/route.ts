@@ -1,10 +1,14 @@
-"use server"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ❌ SUPPRIMEZ CETTE LIGNE
+// "use server"
+
+export const runtime = 'nodejs'  // ✅ Ajoutez ceci à la place
+export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from "next/server"
 import { createMatiere, listMatieres } from "@/src/services/matiere.service"
 import { createMatiereSchema } from "@/src/schemas/matiere.schema"
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(req: NextRequest) {
   try {
     const matieres = await listMatieres()
@@ -12,7 +16,6 @@ export async function GET(req: NextRequest) {
       { success: true, data: matieres },
       { status: 200 }
     )
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: err.message },
@@ -31,7 +34,6 @@ export async function POST(req: NextRequest) {
       { success: true, data: matiere },
       { status: 201 }
     )
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     let status = 400
     if (err.message === "MATIERE_ALREADY_EXISTS") status = 409
