@@ -60,6 +60,7 @@ class ApiClient {
       }
 
       if (!response.ok) {
+        console.error('❌ Response error:', data)
         if (response.status === 401 && typeof window !== "undefined") {
           localStorage.removeItem("setice_token")
           localStorage.removeItem("setice_user")

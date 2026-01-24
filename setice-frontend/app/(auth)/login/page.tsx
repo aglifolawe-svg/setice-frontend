@@ -18,38 +18,51 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [errorDetails, setErrorDetails] = useState<any>(null) // ✅ État pour détails
 
   // Redirect if already authenticated
   useEffect(() => {
-  if (!authLoading && isAuthenticated && user) {
-    // Redirection selon le rôle
-    switch (user.role) {
-      case "DIRECTEUR_ETUDES":
-        router.push("/dashboard")
-        break
-      case "FORMATEUR":
-        router.push("/formateur/travaux")
-        break
-      case "ETUDIANT":
-        router.push("/dashboard/etudiant")
-        break
-      default:
-        router.push("/login")
+    if (!authLoading && isAuthenticated && user) {
+      switch (user.role) {
+        case "DIRECTEUR_ETUDES":
+          router.push("/dashboard")
+          break
+        case "FORMATEUR":
+          router.push("/formateur/travaux")
+          break
+        case "ETUDIANT":
+          router.push("/dashboard/etudiant")
+          break
+        default:
+          router.push("/login")
+      }
     }
-  }
-}, [loading, isAuthenticated, user, router])
-
+  }, [authLoading, isAuthenticated, user, router]) // ✅ Correction des dépendances
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setErrorDetails(null) // ✅ Reset
     setLoading(true)
 
+    // ✅ Log de la tentative
+    console.log("🔐 Tentative de connexion avec:", { email, password: "***" })
+
     const result = await login(email, password)
+
+    // ✅ Log du résultat complet
+    console.log("📦 Résultat de login:", result)
 
     if (result.success) {
       toast.success("Bienvenue sur SETICE !")
     } else {
-      setError(result.error || "Email ou mot de passe incorrect")
+      const errorMsg = result.error || "Email ou mot de passe incorrect"
+      setError(errorMsg)
+      setErrorDetails(result) // ✅ Capturez tout le résultat
+      
+      // ✅ Log détaillé de l'erreur
+      console.error("❌ Erreur de connexion:", result)
+      
       setLoading(false)
     }
   }
@@ -117,9 +130,22 @@ export default function LoginPage() {
 
           {/* Error message */}
           {error && (
-            <div className="flex items-center gap-2 rounded-md bg-destructive-light p-3 text-sm text-destructive">
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* ✅ NOUVEAU: Détails de l'erreur (pour debug) */}
+          {errorDetails && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3">
+              <p className="text-xs font-semibold text-red-800 mb-2">Détails techniques :</p>
+              <pre className="text-xs text-red-600 overflow-auto max-h-40 whitespace-pre-wrap">
+                {JSON.stringify(errorDetails, null, 2)}
+              </pre>
+              <p className="text-xs text-red-500 mt-2">
+                💡 Ouvrez la console (F12) pour plus d'infos
+              </p>
             </div>
           )}
 
