@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
-    ignoreBuildErrors: true, // Ajoutez cette ligne
+    ignoreBuildErrors: true,
+  },
+  // ✅ Désactiver Turbopack pour le build
+  experimental: {
+    turbo: undefined,
   },
 }
 
