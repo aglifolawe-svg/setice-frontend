@@ -5,7 +5,6 @@ import { generateTemporaryPassword, hashPassword } from '@/src/lib/password'
 import jwt from 'jsonwebtoken'
 import { sendActivationEmail } from '@/src/lib/mail-form'
 
-
 export interface CreateFormateurInput {
   nom: string
   prenom: string
@@ -19,7 +18,7 @@ export async function createFormateur(input: CreateFormateurInput) {
   const userRepo = db.getRepository(User)
   const formateurRepo = db.getRepository(Formateur)
 
-  // 1️⃣ Vérifier si l’email existe déjà
+  // 1️⃣ Vérifier si l'email existe déjà
   const existingUser = await userRepo.findOne({
     where: { email: input.email },
   })
@@ -40,68 +39,73 @@ export async function createFormateur(input: CreateFormateurInput) {
     password: hashedPassword,
     role: Role.FORMATEUR,
     motDePasseTemporaire: true,
-  } as Partial<User>)
+    isActive: false // Pas encore activé
+  })
 
   await userRepo.save(user)
 
+  // 4️⃣ Générer le token d'activation JWT
+  const token = jwt.sign(
+    { userId: user.id },
+    process.env.JWT_SECRET || 'super-secret-key',
+    { expiresIn: '24h' }
+  )
 
-  // 5️⃣ Générer le token d'activation JWT
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
-    )
-  
-    user.activationToken = token
-    user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
-    await userRepo.save(user)
+  user.activationToken = token
+  user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  await userRepo.save(user)
 
-  // 4️⃣ Créer le Formateur lié au User
+  // 5️⃣ Créer le Formateur lié au User
   const formateur = formateurRepo.create({
     user,
     specialite: input.specialite || null,
-  } as Partial<Formateur>)
+  })
 
   await formateurRepo.save(formateur)
-  await sendActivationEmail(user.email,  tempPassword, token)
 
-  // 5️⃣ Retour utile (sans password)
+  // 6️⃣ Envoyer l'email d'activation
+  try {
+    await sendActivationEmail(user.email, tempPassword, token)
+  } catch (emailError) {
+    console.error('❌ Erreur envoi email:', emailError)
+    // Ne pas bloquer la création si l'email échoue
+  }
+
+  // ✅ 7️⃣ Retourner un objet PLAIN (pas d'entités TypeORM)
   return {
     id: formateur.id,
-    user: {
-      id: user.id,
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      role: user.role,
-      motDePasseTemporaire: true,
-      temporaryPassword: tempPassword, // à afficher UNE SEULE FOIS
-    },
-    specialite: formateur.specialite
+    userId: user.id,
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    role: user.role,
+    specialite: formateur.specialite,
+    motDePasseTemporaire: true,
+    temporaryPassword: tempPassword, // à afficher UNE SEULE FOIS
+    activationToken: token
   }
 }
+
 // ✅ Récupérer tous les formateurs
 export async function getFormateurs() {
   const db = await getDataSource()
   const formateurRepo = db.getRepository(Formateur)
 
-  // On récupère le formateur avec la relation User
   const formateurs = await formateurRepo.find({
-    relations: ['user'], // important pour avoir nom, prénom, email
+    relations: ['user'],
   })
 
-  // Formater pour le frontend
+  // ✅ Retourner un tableau d'objets PLAIN
   return formateurs.map((f) => ({
     id: f.id,
-    actif: f.user.motDePasseTemporaire ? false : true, // exemple de statut, à adapter
-    user: {
-      id: f.user.id,
-      nom: f.user.nom,
-      prenom: f.user.prenom,
-      email: f.user.email,
-      role: f.user.role,
-    },
-    createdAt: f.user.createdAt,
-    specialite: f.specialite || null, // si tu ajoutes spécialité plus tard
+    userId: f.user.id,
+    nom: f.user.nom,
+    prenom: f.user.prenom,
+    email: f.user.email,
+    role: f.user.role,
+    specialite: f.specialite,
+    actif: !f.user.motDePasseTemporaire && f.user.isActive,
+    motDePasseTemporaire: f.user.motDePasseTemporaire,
+    createdAt: f.user.createdAt.toISOString() // ✅ Convertir Date en string
   }))
 }

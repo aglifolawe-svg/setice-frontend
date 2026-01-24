@@ -34,4 +34,13 @@ export const travailRepository = {
       order: { dateLimite: 'ASC' },
     })
   },
+
+
+  async findByIdEntity(id: string): Promise<Travail | null> {
+    const db = await getDataSource()
+    return await db.getRepository(Travail).findOne({
+      where: { id },
+      relations: ['formateur', 'formateur.user', 'espacePedagogique'], // Ajustez selon vos relations
+    })
+  },
 }

@@ -8,8 +8,6 @@ import { generateMatricule } from '../lib/etudiant.utils'
 import jwt from 'jsonwebtoken'
 import { sendActivationEmail } from '@/src/lib/mail'
 
-
-
 export async function createEtudiant(input: CreateEtudiantInput) {
   const db = await getDataSource()
 
@@ -47,15 +45,15 @@ export async function createEtudiant(input: CreateEtudiantInput) {
     password: hashedPassword,
     role: Role.ETUDIANT,
     motDePasseTemporaire: true,
-  } as Partial<User>)
+    isActive: false
+  })
 
   await userRepo.save(user)
-
 
   // 5️⃣ Générer le token d'activation JWT
   const token = jwt.sign(
     { userId: user.id },
-    process.env.JWT_SECRET!,
+    process.env.JWT_SECRET || 'super-secret-key',
     { expiresIn: '24h' }
   )
 
@@ -63,74 +61,81 @@ export async function createEtudiant(input: CreateEtudiantInput) {
   user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
   await userRepo.save(user)
 
-   // Générer le matricule automatique
-  // Générer un matricule unique
-let studentNumber = await etudiantRepo.count({ where: { promotion } }) + 1
-let matricule: string
-let existing: Etudiant | null = null
+  // 6️⃣ Générer un matricule unique
+  let studentNumber = await etudiantRepo.count({ where: { promotion } }) + 1
+  let matricule: string
+  let existing: Etudiant | null = null
 
-do {
-  matricule = generateMatricule(promotion.code, studentNumber)
-  existing = await etudiantRepo.findOne({ where: { matricule } })
-  studentNumber++
-} while (existing)
+  do {
+    matricule = generateMatricule(promotion.code, studentNumber)
+    existing = await etudiantRepo.findOne({ where: { matricule } })
+    studentNumber++
+  } while (existing)
 
-
-
+  // 7️⃣ Créer l'étudiant
   const etudiant = etudiantRepo.create({
     user,
     promotion,
     matricule,
   })
+  
   await etudiantRepo.save(etudiant)
-  await sendActivationEmail(user.email, matricule, tempPassword, token)
 
-  return {
-    id: etudiant.id,
-    user: {
-      id: user.id,
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      role: user.role,
-      motDePasseTemporaire: true,
-      temporaryPassword: tempPassword,
-    },
-    promotion: {
-      id: promotion.id,
-      code: promotion.code,
-      libelle: promotion.libelle,
-      annee: promotion.annee,
-    },
-    matricule,
+  // 8️⃣ Envoyer l'email d'activation
+  try {
+    await sendActivationEmail(user.email, matricule, tempPassword, token)
+  } catch (emailError) {
+    console.error('❌ Erreur envoi email:', emailError)
   }
 
+  // ✅ Retourner un objet FLAT (pas d'objets imbriqués)
+  return {
+    id: etudiant.id,
+    matricule: matricule,
+    // User fields
+    userId: user.id,
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    role: user.role,
+    motDePasseTemporaire: true,
+    temporaryPassword: tempPassword,
+    activationToken: token,
+    // Promotion fields
+    promotionId: promotion.id,
+    promotionCode: promotion.code,
+    promotionLibelle: promotion.libelle,
+    promotionAnnee: promotion.annee,
+  }
 }
+
 export async function getEtudiants() {
   const db = await getDataSource()
   const etudiantRepo = db.getRepository(Etudiant)
 
   const etudiants = await etudiantRepo.find({
-    relations: ['user', 'promotion'], // On récupère le user et la promotion
+    relations: ['user', 'promotion'],
   })
 
-  // Optionnel : formater les données comme le frontend l'attend
+  // ✅ Retourner un tableau d'objets FLAT
   return etudiants.map((e) => ({
     id: e.id,
     matricule: e.matricule,
-    
-    user: {
-      id: e.user.id,
-      nom: e.user.nom,
-      prenom: e.user.prenom,
-      email: e.user.email,
-
-    },
-    promotion: {
-      id: e.promotion.id,
-      code: e.promotion.code,
-      libelle: e.promotion.libelle,
-      annee: e.promotion.annee,
-    },
+    // User fields
+    userId: e.user.id,
+    nom: e.user.nom,
+    prenom: e.user.prenom,
+    email: e.user.email,
+    role: e.user.role,
+    motDePasseTemporaire: e.user.motDePasseTemporaire,
+    actif: !e.user.motDePasseTemporaire && e.user.isActive,
+    // Promotion fields
+    promotionId: e.promotion.id,
+    promotionCode: e.promotion.code,
+    promotionLibelle: e.promotion.libelle,
+    promotionAnnee: e.promotion.annee,
+    // Dates
+    createdAt: e.user.createdAt.toISOString(),
+    updatedAt: e.user.updatedAt.toISOString(),
   }))
 }

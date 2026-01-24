@@ -44,19 +44,27 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log('3️⃣ Fetching travail...', travailId)
-    const travail = await travailRepository.findById(travailId)
+    console.log('3️⃣ Fetching travail entity...')
+    // ✅ Utiliser findByIdEntity pour récupérer l'entité complète
+    const travail = await travailRepository.findByIdEntity(travailId)
     if (!travail) {
       console.log('❌ TRAVAIL_NOT_FOUND')
-      throw new Error('TRAVAIL_NOT_FOUND')
+      return NextResponse.json(
+        { success: false, error: 'TRAVAIL_NOT_FOUND' },
+        { status: 404 }
+      )
     }
     console.log('✅ Travail found:', travail.id, travail.titre)
 
-    console.log('4️⃣ Fetching etudiant...', etudiantId)
-    const etudiant = await etudiantRepository.findById(etudiantId)
+    console.log('4️⃣ Fetching etudiant entity...')
+    // ✅ Utiliser findByIdEntity pour récupérer l'entité complète
+    const etudiant = await etudiantRepository.findByIdEntity(etudiantId)
     if (!etudiant) {
       console.log('❌ ETUDIANT_NOT_FOUND')
-      throw new Error('ETUDIANT_NOT_FOUND')
+      return NextResponse.json(
+        { success: false, error: 'ETUDIANT_NOT_FOUND' },
+        { status: 404 }
+      )
     }
     console.log('✅ Etudiant found:', etudiant.id, etudiant.matricule)
 
@@ -66,17 +74,19 @@ export async function POST(req: NextRequest) {
       etudiant,
       formateur: travail.formateur,
     })
-    console.log('✅ Assignation created:', assignation.id)
+    console.log('✅ Assignation created:', assignation)
 
-    return NextResponse.json(
-      { success: true, data: assignation }
-    )
+    // ✅ Retourner un objet PLAIN (pas l'entité directement)
+    return NextResponse.json({
+      success: true,
+      data: assignation // assignTravail devrait déjà retourner un objet plain
+    })
   } catch (err: any) {
     console.error('❌ CREATE ASSIGNATION ERROR:', err)
     console.error('Stack trace:', err.stack)
     return NextResponse.json(
       { success: false, error: err.message },
-      { status: 400 }
+      { status: 500 }
     )
   }
 }
