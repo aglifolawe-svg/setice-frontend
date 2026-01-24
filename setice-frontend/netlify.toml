@@ -6,4 +6,4 @@
   package = "@netlify/plugin-nextjs"
 
 [build.environment]
-  NEXT_PUBLIC_API_URL = "https://upstack-react-base.onrender.com"
+  NEXT_PUBLIC_API_URL = "https://upstack-react-base.onrender.com/api/v1"
