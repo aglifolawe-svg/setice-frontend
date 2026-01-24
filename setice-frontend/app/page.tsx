@@ -24,7 +24,7 @@ export default function HomePage() {
             router.push("/dashboard")
             break
           default:
-            router.push("/dashboard")
+            router.push("/login")
         }
       } else {
         router.push("/login")

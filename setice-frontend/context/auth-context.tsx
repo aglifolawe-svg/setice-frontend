@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/etudiant')
         break
       default:
-        router.push('/dashboard')
+        router.push('/login')
     }
   }
 
