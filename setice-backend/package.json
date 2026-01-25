@@ -1,50 +1,40 @@
 {
-  "name": "setice-backend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build ",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:acceptance": "jest --config jest.acceptance.config.ts",
-    "test:sprint1": "jest sprint1.acceptance.test.ts --config jest.acceptance.config.ts",
-    "test:acceptance:watch": "jest --config jest.acceptance.config.ts --watch",
-    "test:acceptance:verbose": "jest --config jest.acceptance.config.ts --verbose"
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "jsonwebtoken": "^9.0.3",
-    "next": "16.1.0",
-    "next-auth": "^4.24.13",
-    "nodemailer": "^7.0.12",
-    "pg": "^8.16.3",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.28",
-    "uuid": "^13.0.0",
-    "zod": "^4.2.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/bcrypt": "^6.0.0",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20",
-    "@types/nodemailer": "^7.0.4",
-    "@types/pg": "^8.16.0",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/uuid": "^10.0.0",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.0",
-    "jest-html-reporter": "^4.3.0",
-    "tailwindcss": "^4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  }
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts",
+    "generate-jwt.js"
+  ],
+  "exclude": ["node_modules"]
 }

@@ -1,4 +1,3 @@
-console.log('🟢 [ETUDIANT] 1. Début chargement Etudiant.ts')
 
 import {
   Entity,
@@ -8,20 +7,17 @@ import {
   JoinColumn,
   Column,
 } from 'typeorm'
-
-console.log('🟢 [ETUDIANT] 2. TypeORM importé avec succès')
-
-import { Promotion } from './Promotion'
-import { User } from './User'
-import { EspacePedagogique } from './EspacePedagogique'
-
-console.log('🟢 [ETUDIANT] 3. Toutes les dépendances importées (Promotion, User, EspacePedagogique)')
+// ✅ CORRECTION : Utilisez "import type" pour TOUTES les entités
+import type { Promotion } from './Promotion'
+import type { User } from './User'
+import type { EspacePedagogique } from './EspacePedagogique'
 
 @Entity('etudiants')
 export class Etudiant {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
+  // ✅ Les fonctions fléchées chargent les classes à l'exécution
   @ManyToOne(
     () => Promotion,
     (promotion) => promotion.etudiants,
@@ -43,5 +39,3 @@ export class Etudiant {
   @ManyToMany(() => EspacePedagogique, (espace) => espace.etudiants)
   espacesPedagogiques!: EspacePedagogique[]
 }
-
-console.log('✅ [ETUDIANT] 4. Classe Etudiant définie avec succès')

@@ -1,5 +1,3 @@
-console.log('🟡 [PROMOTION] 1. Début chargement Promotion.ts')
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,12 +6,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm'
-
-console.log('🟡 [PROMOTION] 2. TypeORM importé avec succès')
-
-import { Etudiant } from './Etudiant'  // ✅ Import normal
-
-console.log('🟡 [PROMOTION] 3. Etudiant importé avec succès')
+// ✅ CORRECTION : Utilisez "import type" au lieu d'import normal
+import type { Etudiant } from './Etudiant'
 
 @Entity('promotions')
 export class Promotion {
@@ -29,7 +23,8 @@ export class Promotion {
   @Column()
   annee!: string
 
-  @OneToMany(() => Etudiant, (etudiant) => etudiant.promotion)  // ✅ Fonction fléchée
+  // ✅ La fonction fléchée charge la classe à l'exécution
+  @OneToMany(() => Etudiant, (etudiant) => etudiant.promotion)
   etudiants!: Etudiant[]
 
   @CreateDateColumn()
@@ -38,5 +33,3 @@ export class Promotion {
   @UpdateDateColumn()
   updatedAt!: Date
 }
-
-console.log('✅ [PROMOTION] 4. Classe Promotion définie avec succès')
