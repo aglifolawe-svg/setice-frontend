@@ -1,48 +1,50 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
-// Création du transporter SMTP pour Gmail
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, // smtp.gmail.com
-  port: Number(process.env.SMTP_PORT), // 587 pour TLS
-  secure: false, // true si port 465, false pour 587
-  auth: {
-    user: process.env.SMTP_USER, // ton Gmail
-    pass: process.env.SMTP_PASSWORD, // mot de passe d’application Gmail
-  },
-});
+// Récupération des variables d'environnement
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SMTP_FROM = process.env.SMTP_FROM;
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// Vérification
+if (!SENDGRID_API_KEY) throw new Error("SENDGRID_API_KEY manquant !");
+if (!SMTP_FROM) throw new Error("SMTP_FROM manquant !");
+if (!FRONTEND_URL) throw new Error("FRONTEND_URL manquant !");
+
+// Initialisation SendGrid
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 export async function GET() {
-  console.log("📨 TEST GMAIL: /api/test-mail");
+  console.log("📨 TEST SENDGRID: /api/test-mail");
 
   try {
-    console.log("🔧 Vérification du transporteur SMTP...");
-    await transporter.verify();
-    console.log("✅ Transporteur valide !");
-
-    console.log("📤 Envoi de l’email de test…");
-
-    // Remplace cet email par l'email réel de l'étudiant
+    // Email de test : remplace par l'email réel de l'étudiant
     const recipientEmail = "etudiant@gmail.com";
 
-    const info = await transporter.sendMail({
-      from: `"SETICE Test" <${process.env.SMTP_USER}>`, // ton Gmail
-      to: recipientEmail, // l’étudiant
-      subject: "Test Email SETICE",
-      text: "Si vous recevez ceci, l’envoi Gmail fonctionne parfaitement !",
-    });
+    const msg = {
+      to: recipientEmail,
+      from: SMTP_FROM!, // l'adresse vérifiée dans SendGrid
+      subject: "Test Email SETICE via SendGrid",
+      text: "Si vous recevez ceci, l’envoi SendGrid fonctionne parfaitement !",
+      html: `
+        <p>Bonjour,</p>
+        <p>Si vous recevez cet email, SendGrid fonctionne correctement depuis Render !</p>
+      `,
+    };
 
-    console.log("✅ Email envoyé:", info.messageId);
+    const response = await sgMail.send(msg);
+
+    console.log("✅ Email envoyé via SendGrid ! Status:", response[0].statusCode);
 
     return NextResponse.json({
       success: true,
-      message: `Email de test envoyé à ${recipientEmail} avec succès !`,
-      messageId: info.messageId,
+      message: `Email de test envoyé à ${recipientEmail} via SendGrid !`,
+      status: response[0].statusCode,
     });
 
   } catch (error: any) {
-    console.error("❌ Erreur d’envoi Gmail:", error);
+    console.error("❌ Erreur d’envoi SendGrid:", error.message || error);
 
     return NextResponse.json(
       { success: false, error: error.message },

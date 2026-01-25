@@ -1,32 +1,40 @@
-import nodemailer from 'nodemailer'
+import sgMail from "@sendgrid/mail";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false, // true si port 465
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-})
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SMTP_FROM = process.env.SMTP_FROM;
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
-export async function sendActivationEmail(email: string, matricule: string, tempPassword: string, token: string) {
-  const activationLink = `${process.env.FRONTEND_URL}/activate?token=${token}`
+// Vérification des variables d'environnement
+if (!SENDGRID_API_KEY) throw new Error("SENDGRID_API_KEY manquant !");
+if (!SMTP_FROM) throw new Error("SMTP_FROM manquant !");
+if (!FRONTEND_URL) throw new Error("FRONTEND_URL manquant !");
 
-  const mailOptions = {
-    from: '"SETICE" <no-reply@setice.edu>',
+sgMail.setApiKey(SENDGRID_API_KEY);
+
+export async function sendActivationEmail(email: string, tempPassword: string, token: string) {
+  const activationLink = `${FRONTEND_URL}/activate?token=${token}`;
+
+  const msg = {
     to: email,
-    subject: 'Activation de votre compte étudiant',
+    from: SMTP_FROM!, // <-- le "!" règle le problème TypeScript
+    subject: "Activation de votre compte formateur",
     html: `
       <p>Bonjour,</p>
-      <p>Votre compte étudiant a été créé avec succès.</p>
-      <p><strong>Matricule:</strong> ${matricule}</p>
+      <p>Votre compte formateur a été créé avec succès.</p>
+      <p><strong>Email:</strong> ${email}</p>
       <p><strong>Mot de passe temporaire:</strong> ${tempPassword}</p>
       <p>Pour activer votre compte, cliquez sur ce lien:</p>
       <a href="${activationLink}">Activer mon compte</a>
       <p>Merci !</p>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
+  try {
+    const response = await sgMail.send(msg);
+    console.log(`✅ Email envoyé à ${email} via SendGrid ! Status: ${response[0].statusCode}`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error("❌ Erreur d’envoi SendGrid:", error.message || error);
+    throw error;
+  }
 }
