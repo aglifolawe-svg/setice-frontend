@@ -1,5 +1,3 @@
-console.log('🟢 [ETUDIANT] 1. Début chargement Etudiant.ts')
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,13 +7,9 @@ import {
   Column,
 } from 'typeorm'
 
-console.log('🟢 [ETUDIANT] 2. TypeORM importé avec succès')
-
 import { Promotion } from './Promotion'
 import { User } from './User'
 import { EspacePedagogique } from './EspacePedagogique'
-
-console.log('🟢 [ETUDIANT] 3. Toutes les dépendances importées (Promotion, User, EspacePedagogique)')
 
 @Entity('etudiants')
 export class Etudiant {
@@ -43,5 +37,3 @@ export class Etudiant {
   @ManyToMany(() => EspacePedagogique, (espace) => espace.etudiants)
   espacesPedagogiques!: EspacePedagogique[]
 }
-
-console.log('✅ [ETUDIANT] 4. Classe Etudiant définie avec succès')
