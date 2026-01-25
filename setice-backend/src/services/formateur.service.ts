@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/formateur.service.ts
-import { getDataSource } from '@/src/lib/db'  // ✅ Changé
-import { Role } from '@/src/entities/User'  // ✅ Gardez Role comme import normal (c'est un enum)
+import { getDataSource } from '@/src/lib/db'
+
+import { Role } from '@/src/entities/User'
 import { generateTemporaryPassword, hashPassword } from '@/src/lib/password'
 import jwt from 'jsonwebtoken'
 import { sendActivationEmail } from '@/src/lib/mail-form'
@@ -16,7 +17,6 @@ export interface CreateFormateurInput {
 export async function createFormateur(input: CreateFormateurInput) {
   const db = await getDataSource()
 
-  // ✅ Import dynamique des entités
   const { User } = await import('@/src/entities/User')
   const { Formateur } = await import('@/src/entities/Formateur')
 
@@ -90,28 +90,40 @@ export async function createFormateur(input: CreateFormateurInput) {
   }
 }
 
+// ✅ FIX : Chargement correct des relations
 export async function getFormateurs() {
   const db = await getDataSource()
   
-  // ✅ Import dynamique
   const { Formateur } = await import('@/src/entities/Formateur')
   
   const formateurRepo = db.getRepository(Formateur)
 
-  const formateurs = await formateurRepo.find({
-    relations: ['user'],
-  })
+  // ✅ Utiliser QueryBuilder pour charger la relation explicitement
+  const formateurs = await formateurRepo
+    .createQueryBuilder('formateur')
+    .leftJoinAndSelect('formateur.user', 'user')
+    .getMany()
 
-  return formateurs.map((f: { id: any; user: { id: any; nom: any; prenom: any; email: any; role: any; motDePasseTemporaire: any; isActive: any; createdAt: { toISOString: () => any } }; specialite: any }) => ({
-    id: f.id,
-    userId: f.user.id,
-    nom: f.user.nom,
-    prenom: f.user.prenom,
-    email: f.user.email,
-    role: f.user.role,
-    specialite: f.specialite,
-    actif: !f.user.motDePasseTemporaire && f.user.isActive,
-    motDePasseTemporaire: f.user.motDePasseTemporaire,
-    createdAt: f.user.createdAt.toISOString(),
-  }))
+  console.log('📦 Formateurs chargés:', formateurs.length)
+  
+  // ✅ Vérifier que user existe avant d'accéder à ses propriétés
+  return formateurs.map((f: { user: { id: any; nom: any; prenom: any; email: any; role: any; motDePasseTemporaire: any; isActive: any; createdAt: { toISOString: () => any } }; id: any; specialite: any }) => {
+    if (!f.user) {
+      console.error('⚠️ Formateur sans user:', f.id)
+      return null
+    }
+    
+    return {
+      id: f.id,
+      userId: f.user.id,
+      nom: f.user.nom,
+      prenom: f.user.prenom,
+      email: f.user.email,
+      role: f.user.role,
+      specialite: f.specialite,
+      actif: !f.user.motDePasseTemporaire && f.user.isActive,
+      motDePasseTemporaire: f.user.motDePasseTemporaire,
+      createdAt: f.user.createdAt.toISOString(),
+    }
+  }).filter(Boolean) // ✅ Enlever les nulls
 }
