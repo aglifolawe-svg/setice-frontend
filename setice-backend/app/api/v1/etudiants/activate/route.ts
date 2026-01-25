@@ -20,6 +20,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
+   console.log("📥 [ACTIVATE] Body complet:", JSON.stringify(body, null, 2))
+    console.log("📥 [ACTIVATE] Type de token:", typeof body.token)
+    console.log("📥 [ACTIVATE] Token:", body.token)
+    console.log("📥 [ACTIVATE] Token length:", body.token?.length)
+    console.log("📥 [ACTIVATE] Premier caractère du token:", body.token?.[0])
+
+
+
     const { token, newPassword } = body as { token: string; newPassword?: string }
 
     // ✅ AJOUTEZ CES LOGS
