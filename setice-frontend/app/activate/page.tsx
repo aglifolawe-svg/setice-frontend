@@ -16,6 +16,13 @@ function ActivateForm() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleActivate = async () => {
+
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━")
+    console.log("🔍 [FRONTEND] Token extrait de l'URL:", token)
+    console.log("🔍 [FRONTEND] Longueur du token:", token.length)
+    console.log("🔍 [FRONTEND] Commence par 'eyJ'?:", token.startsWith('eyJ'))
+    console.log("🔍 [FRONTEND] Password saisi:", password.substring(0, 3) + "***")
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━")
     // Validation
     if (!token) {
       toast.error("Token d'activation manquant")
