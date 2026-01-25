@@ -1,3 +1,4 @@
+// EspacePedagogique.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,10 +8,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm'
-import { Promotion } from './Promotion'  // ✅ Import normal
-import { Formateur } from './Formateur'
-import { Matiere } from './Matiere'
-import { Etudiant } from './Etudiant'
+import type { Promotion } from './Promotion'
+import type { Formateur } from './Formateur'
+import type { Matiere } from './Matiere'
+import type { Etudiant } from './Etudiant'
 
 @Entity('espaces_pedagogiques')
 export class EspacePedagogique {

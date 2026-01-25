@@ -1,3 +1,4 @@
+// Livraison.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +7,7 @@ import {
   Column,
   CreateDateColumn,
 } from 'typeorm'
-import { Assignation } from './Assignation'
+import type { Assignation } from './Assignation'
 
 @Entity('livraisons')
 export class Livraison {

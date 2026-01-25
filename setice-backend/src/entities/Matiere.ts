@@ -1,3 +1,4 @@
+// Matiere.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm'
-import { EspacePedagogique } from './EspacePedagogique'  // ✅ Import normal
+import type { EspacePedagogique } from './EspacePedagogique'
 
 @Entity('matieres')
 export class Matiere {

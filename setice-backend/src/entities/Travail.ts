@@ -1,3 +1,4 @@
+// Travail.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,8 +6,8 @@ import {
   ManyToOne,
   CreateDateColumn,
 } from 'typeorm'
-import { EspacePedagogique } from './EspacePedagogique'
-import { User } from './User'
+import type { EspacePedagogique } from './EspacePedagogique'
+import type { User } from './User'
 
 export enum TypeTravail {
   INDIVIDUEL = 'INDIVIDUEL',

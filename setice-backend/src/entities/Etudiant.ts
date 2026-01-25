@@ -11,11 +11,12 @@ import {
 
 console.log('🟢 [ETUDIANT] 2. TypeORM importé avec succès')
 
-import { Promotion } from './Promotion'
-import { User } from './User'
-import { EspacePedagogique } from './EspacePedagogique'
+// ✅ Utilisez "import type" au lieu de "import"
+import type { Promotion } from './Promotion'
+import type { User } from './User'
+import type { EspacePedagogique } from './EspacePedagogique'
 
-console.log('🟢 [ETUDIANT] 3. Toutes les dépendances importées (Promotion, User, EspacePedagogique)')
+console.log('🟢 [ETUDIANT] 3. Tous les types importés (Promotion, User, EspacePedagogique)')
 
 @Entity('etudiants')
 export class Etudiant {

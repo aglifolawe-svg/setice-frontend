@@ -1,3 +1,4 @@
+// Assignation.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,9 +7,9 @@ import {
   CreateDateColumn,
   Unique,
 } from 'typeorm'
-import { Travail } from './Travail'
-import { Etudiant } from './Etudiant'
-import { User } from './User'
+import type { Travail } from './Travail'
+import type { Etudiant } from './Etudiant'
+import type { User } from './User'
 
 export enum StatutAssignation {
   ASSIGNE = 'ASSIGNE',

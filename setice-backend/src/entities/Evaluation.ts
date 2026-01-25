@@ -1,3 +1,4 @@
+// Evaluation.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,8 +8,8 @@ import {
   JoinColumn,
   CreateDateColumn,
 } from 'typeorm'
-import { Assignation } from './Assignation'
-import { User } from './User'
+import type { Assignation } from './Assignation'
+import type { User } from './User'
 
 @Entity('evaluations')
 export class Evaluation {
