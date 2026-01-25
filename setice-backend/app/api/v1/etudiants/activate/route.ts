@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     try {
       payload = jwt.verify(token, JWT_SECRET) as ActivatePayload
       console.log("✅ [ACTIVATE] Token valide - userId:", payload.userId)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       return NextResponse.json({ success: false, error: "Token invalide ou expiré" }, { status: 401 })
     }
