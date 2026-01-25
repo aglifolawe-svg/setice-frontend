@@ -1,6 +1,7 @@
-import { getDataSource } from '@/src/lib/db'
-import { User, Role } from '@/src/entities/User'
-import { Formateur } from '@/src/entities/Formateur'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/services/formateur.service.ts
+import { getDataSource } from '@/src/lib/db'  // ✅ Changé
+import { Role } from '@/src/entities/User'  // ✅ Gardez Role comme import normal (c'est un enum)
 import { generateTemporaryPassword, hashPassword } from '@/src/lib/password'
 import jwt from 'jsonwebtoken'
 import { sendActivationEmail } from '@/src/lib/mail-form'
@@ -14,6 +15,10 @@ export interface CreateFormateurInput {
 
 export async function createFormateur(input: CreateFormateurInput) {
   const db = await getDataSource()
+
+  // ✅ Import dynamique des entités
+  const { User } = await import('@/src/entities/User')
+  const { Formateur } = await import('@/src/entities/Formateur')
 
   const userRepo = db.getRepository(User)
   const formateurRepo = db.getRepository(Formateur)
@@ -39,7 +44,7 @@ export async function createFormateur(input: CreateFormateurInput) {
     password: hashedPassword,
     role: Role.FORMATEUR,
     motDePasseTemporaire: true,
-    isActive: false // Pas encore activé
+    isActive: false,
   })
 
   await userRepo.save(user)
@@ -68,10 +73,9 @@ export async function createFormateur(input: CreateFormateurInput) {
     await sendActivationEmail(user.email, tempPassword, token)
   } catch (emailError) {
     console.error('❌ Erreur envoi email:', emailError)
-    // Ne pas bloquer la création si l'email échoue
   }
 
-  // ✅ 7️⃣ Retourner un objet PLAIN (pas d'entités TypeORM)
+  // 7️⃣ Retourner un objet PLAIN
   return {
     id: formateur.id,
     userId: user.id,
@@ -81,22 +85,24 @@ export async function createFormateur(input: CreateFormateurInput) {
     role: user.role,
     specialite: formateur.specialite,
     motDePasseTemporaire: true,
-    temporaryPassword: tempPassword, // à afficher UNE SEULE FOIS
-    activationToken: token
+    temporaryPassword: tempPassword,
+    activationToken: token,
   }
 }
 
-// ✅ Récupérer tous les formateurs
 export async function getFormateurs() {
   const db = await getDataSource()
+  
+  // ✅ Import dynamique
+  const { Formateur } = await import('@/src/entities/Formateur')
+  
   const formateurRepo = db.getRepository(Formateur)
 
   const formateurs = await formateurRepo.find({
     relations: ['user'],
   })
 
-  // ✅ Retourner un tableau d'objets PLAIN
-  return formateurs.map((f) => ({
+  return formateurs.map((f: { id: any; user: { id: any; nom: any; prenom: any; email: any; role: any; motDePasseTemporaire: any; isActive: any; createdAt: { toISOString: () => any } }; specialite: any }) => ({
     id: f.id,
     userId: f.user.id,
     nom: f.user.nom,
@@ -106,6 +112,6 @@ export async function getFormateurs() {
     specialite: f.specialite,
     actif: !f.user.motDePasseTemporaire && f.user.isActive,
     motDePasseTemporaire: f.user.motDePasseTemporaire,
-    createdAt: f.user.createdAt.toISOString() // ✅ Convertir Date en string
+    createdAt: f.user.createdAt.toISOString(),
   }))
 }
