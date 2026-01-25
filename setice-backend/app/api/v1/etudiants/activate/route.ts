@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     console.log("💾 [ACTIVATE] Mise à jour du compte...")
     user.password = hashedPassword
     user.motDePasseTemporaire = false
-    user.isActive = true
+   
     await userRepo.save(user)
 
     console.log("✅ [ACTIVATE] Compte activé avec succès!")
