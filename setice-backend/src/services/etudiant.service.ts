@@ -11,11 +11,10 @@ import { sendActivationEmail } from '@/src/lib/mail'
 // ✅ IMPORTANT : Utilisez NEXTAUTH_SECRET (pas JWT_SECRET)
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key'
 
-// src/services/etudiant.service.ts
-
 export async function createEtudiant(input: CreateEtudiantInput) {
   const db = await getDataSource()
 
+  // ✅ Import dynamique
   const { User } = await import('@/src/entities/User')
   const { Etudiant } = await import('@/src/entities/Etudiant')
   const { Promotion } = await import('@/src/entities/Promotion')
@@ -59,26 +58,25 @@ export async function createEtudiant(input: CreateEtudiantInput) {
 
   await userRepo.save(user)
 
-  // 5️⃣ ✅ GÉNÉRER LE TOKEN ICI (AVANT de l'utiliser !)
+  // 5️⃣ Générer le token d'activation JWT
   console.log('🔐 [SERVICE] Génération token avec secret:', JWT_SECRET.substring(0, 10) + '...')
   
   const token = jwt.sign(
     { 
       userId: user.id,
-      type: 'activation'
+      type: 'activation' // ✅ Ajoutez un type
     },
-    JWT_SECRET,
+    JWT_SECRET, // ✅ Utilisez la constante
     { expiresIn: '24h' }
   )
 
   console.log('✅ [SERVICE] Token généré:', token.substring(0, 30) + '...')
 
-  // 6️⃣ Sauvegarder le token dans la BDD
   user.activationToken = token
   user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
   await userRepo.save(user)
 
-  // 7️⃣ Générer un matricule unique
+  // 6️⃣ Générer un matricule unique
   let studentNumber = await etudiantRepo.count({ where: { promotion } }) + 1
   let matricule: string
   let existing: Etudiant | null = null
@@ -89,7 +87,7 @@ export async function createEtudiant(input: CreateEtudiantInput) {
     studentNumber++
   } while (existing)
 
-  // 8️⃣ Créer l'étudiant
+  // 7️⃣ Créer l'étudiant
   const etudiant = etudiantRepo.create({
     user,
     promotion,
@@ -98,7 +96,7 @@ export async function createEtudiant(input: CreateEtudiantInput) {
   
   await etudiantRepo.save(etudiant)
 
-  // 9️⃣ ✅ MAINTENANT vous pouvez envoyer l'email (token existe maintenant)
+  // 8️⃣ Envoyer l'email d'activation
   try {
     await sendActivationEmail(user.email, matricule, tempPassword, token)
     console.log('✅ [SERVICE] Email d\'activation envoyé à:', user.email)
@@ -107,7 +105,7 @@ export async function createEtudiant(input: CreateEtudiantInput) {
     // Ne pas bloquer la création si l'email échoue
   }
 
-  // 🔟 Retourner un objet FLAT
+  // 9️⃣ Retourner un objet FLAT
   return {
     id: etudiant.id,
     matricule: matricule,
@@ -124,4 +122,35 @@ export async function createEtudiant(input: CreateEtudiantInput) {
     promotionLibelle: promotion.libelle,
     promotionAnnee: promotion.annee,
   }
+}
+
+export async function getEtudiants() {
+  const db = await getDataSource()
+  
+  // ✅ Import dynamique
+  const { Etudiant } = await import('@/src/entities/Etudiant')
+  
+  const etudiantRepo = db.getRepository(Etudiant)
+
+  const etudiants = await etudiantRepo.find({
+    relations: ['user', 'promotion'],
+  })
+
+  return etudiants.map((e) => ({
+    id: e.id,
+    matricule: e.matricule,
+    userId: e.user.id,
+    nom: e.user.nom,
+    prenom: e.user.prenom,
+    email: e.user.email,
+    role: e.user.role,
+    motDePasseTemporaire: e.user.motDePasseTemporaire,
+    actif: !e.user.motDePasseTemporaire && e.user.isActive,
+    promotionId: e.promotion.id,
+    promotionCode: e.promotion.code,
+    promotionLibelle: e.promotion.libelle,
+    promotionAnnee: e.promotion.annee,
+    createdAt: e.user.createdAt.toISOString(),
+    updatedAt: e.user.updatedAt.toISOString(),
+  }))
 }

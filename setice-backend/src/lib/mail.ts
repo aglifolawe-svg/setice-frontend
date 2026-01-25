@@ -1,7 +1,7 @@
 // lib/mail.ts
 import sgMail from "@sendgrid/mail";
 
-export async function sendActivationEmail(email: string, tempPassword: string, token: string, token: string) {
+export async function sendActivationEmail(email: string, tempPassword: string,  token: string) {
   const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY!;
   const SMTP_FROM = process.env.SMTP_FROM!;
   const FRONTEND_URL = process.env.FRONTEND_URL!;
