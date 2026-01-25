@@ -1,12 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
-import { transporter } from "@/src/lib/mail";
+import nodemailer from "nodemailer";
+
+// Création du transporter SMTP
+export const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+  secure: false, // true pour port 465
+});
 
 export async function GET() {
-  console.log("");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("📨 TEST MAILTRAP: /api/test-mail");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   try {
     console.log("🔧 Vérification du transporteur SMTP...");
@@ -17,13 +25,12 @@ export async function GET() {
 
     const info = await transporter.sendMail({
       from: '"SETICE Test" <no-reply@setice.edu>',
-      to: process.env.SMTP_USER, // Mailtrap: on envoie à soi-même
+      to: process.env.SMTP_TO, // ✅ ici, inbox Mailtrap
       subject: "Test Mailtrap depuis Render",
       text: "Si vous recevez ceci, Mailtrap fonctionne parfaitement !",
     });
 
     console.log("✅ Email envoyé:", info.messageId);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     return NextResponse.json({
       success: true,
@@ -33,7 +40,6 @@ export async function GET() {
 
   } catch (error: any) {
     console.error("❌ Erreur d’envoi Mailtrap:", error);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     return NextResponse.json(
       { success: false, error: error.message },
