@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // src/services/formateur.service.ts
 import { getDataSource } from '@/src/lib/db'
 
@@ -75,22 +75,29 @@ export async function createFormateur(input: CreateFormateurInput) {
     console.error('❌ Erreur envoi email:', emailError)
   }
 
-  // 7️⃣ Retourner un objet PLAIN
+  // 7️⃣ Retourner la structure cohérente avec le type TypeScript
   return {
     id: formateur.id,
-    userId: user.id,
-    nom: user.nom,
-    prenom: user.prenom,
-    email: user.email,
-    role: user.role,
+    actif: !user.motDePasseTemporaire && user.isActive,
     specialite: formateur.specialite,
-    motDePasseTemporaire: true,
-    temporaryPassword: tempPassword,
-    activationToken: token,
+    user: {
+      id: user.id,
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      role: user.role,
+    },
+    // ⚠️ Info supplémentaires pour le debug (optionnel)
+    _debug: {
+      temporaryPassword: tempPassword,
+      activationToken: token,
+    }
   }
 }
 
 // ✅ FIX : Chargement correct des relations
+// src/services/formateur.service.ts
+
 export async function getFormateurs() {
   const db = await getDataSource()
   
@@ -98,7 +105,7 @@ export async function getFormateurs() {
   
   const formateurRepo = db.getRepository(Formateur)
 
-  // ✅ Utiliser QueryBuilder pour charger la relation explicitement
+  // ✅ Charger les formateurs avec leurs users
   const formateurs = await formateurRepo
     .createQueryBuilder('formateur')
     .leftJoinAndSelect('formateur.user', 'user')
@@ -106,8 +113,8 @@ export async function getFormateurs() {
 
   console.log('📦 Formateurs chargés:', formateurs.length)
   
-  // ✅ Vérifier que user existe avant d'accéder à ses propriétés
-  return formateurs.map((f: { user: { id: any; nom: any; prenom: any; email: any; role: any; motDePasseTemporaire: any; isActive: any; createdAt: { toISOString: () => any } }; id: any; specialite: any }) => {
+  // ✅ Retourner la structure avec user imbriqué (comme attendu par le type TypeScript)
+  return formateurs.map((f) => {
     if (!f.user) {
       console.error('⚠️ Formateur sans user:', f.id)
       return null
@@ -115,15 +122,15 @@ export async function getFormateurs() {
     
     return {
       id: f.id,
-      userId: f.user.id,
-      nom: f.user.nom,
-      prenom: f.user.prenom,
-      email: f.user.email,
-      role: f.user.role,
-      specialite: f.specialite,
       actif: !f.user.motDePasseTemporaire && f.user.isActive,
-      motDePasseTemporaire: f.user.motDePasseTemporaire,
-      createdAt: f.user.createdAt.toISOString(),
+      specialite: f.specialite,
+      user: {
+        id: f.user.id,
+        nom: f.user.nom,
+        prenom: f.user.prenom,
+        email: f.user.email,
+        role: f.user.role,
+      },
     }
-  }).filter(Boolean) // ✅ Enlever les nulls
+  }).filter(Boolean) // Enlever les nulls
 }
