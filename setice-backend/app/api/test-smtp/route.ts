@@ -1,46 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/test-smtp/route.ts
-import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { NextResponse } from "next/server";
+import { transporter } from "@/src/lib/mail";
 
 export async function GET() {
-  console.log('🔍 Test de connexion SMTP...')
-  console.log('Config:', {
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    user: process.env.SMTP_USER,
-  })
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  })
+  console.log("");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("📨 TEST MAILTRAP: /api/test-mail");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   try {
-    // Tester la connexion
-    await transporter.verify()
-    console.log('✅ Connexion SMTP OK')
-    
-    // Essayer d'envoyer un email de test
+    console.log("🔧 Vérification du transporteur SMTP...");
+    await transporter.verify();
+    console.log("✅ Transporteur valide !");
+
+    console.log("📤 Envoi de l’email de test…");
+
     const info = await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: process.env.SMTP_USER, // À vous-même
-      subject: 'Test SMTP depuis Render',
-      text: 'Si vous recevez ceci, SMTP fonctionne !',
-    })
-    
-    console.log('✅ Email envoyé:', info.messageId)
-    return NextResponse.json({ success: true, messageId: info.messageId })
+      from: '"SETICE Test" <no-reply@setice.edu>',
+      to: process.env.SMTP_USER, // Mailtrap: on envoie à soi-même
+      subject: "Test Mailtrap depuis Render",
+      text: "Si vous recevez ceci, Mailtrap fonctionne parfaitement !",
+    });
+
+    console.log("✅ Email envoyé:", info.messageId);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    return NextResponse.json({
+      success: true,
+      message: "Email de test envoyé avec succès !",
+      messageId: info.messageId,
+    });
+
   } catch (error: any) {
-    console.error('❌ Erreur SMTP:', error)
+    console.error("❌ Erreur d’envoi Mailtrap:", error);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
-    )
+    );
   }
 }
