@@ -1,3 +1,5 @@
+console.log('🟢 [ETUDIANT] 1. Début chargement Etudiant.ts')
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,17 +8,20 @@ import {
   JoinColumn,
   Column,
 } from 'typeorm'
-// ✅ Import normal pour utilisation dans les décorateurs
+
+console.log('🟢 [ETUDIANT] 2. TypeORM importé avec succès')
+
 import { Promotion } from './Promotion'
 import { User } from './User'
 import { EspacePedagogique } from './EspacePedagogique'
+
+console.log('🟢 [ETUDIANT] 3. Toutes les dépendances importées (Promotion, User, EspacePedagogique)')
 
 @Entity('etudiants')
 export class Etudiant {
   @PrimaryGeneratedColumn('uuid')
   id!: string
 
-  // ✅ La fonction fléchée () => évite la circularité
   @ManyToOne(
     () => Promotion,
     (promotion) => promotion.etudiants,
@@ -38,3 +43,5 @@ export class Etudiant {
   @ManyToMany(() => EspacePedagogique, (espace) => espace.etudiants)
   espacesPedagogiques!: EspacePedagogique[]
 }
+
+console.log('✅ [ETUDIANT] 4. Classe Etudiant définie avec succès')
