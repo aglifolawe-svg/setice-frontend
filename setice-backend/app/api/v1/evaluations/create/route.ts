@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken'
 import { evaluateTravailSchema } from '@/src/schemas/evaluateTravail.schema'
 import { evaluateTravail } from '@/src/services/evaluation.service'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 async function getUserFromToken(req: NextRequest) {
   const authHeader = req.headers.get('authorization')

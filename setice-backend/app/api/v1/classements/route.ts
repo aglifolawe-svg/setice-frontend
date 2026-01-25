@@ -5,7 +5,8 @@ import { getDataSource } from '@/src/lib/db'
 import { Travail } from '@/src/entities/Travail'
 import { Assignation } from '@/src/entities/Assignation'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 async function getUserFromToken(req: NextRequest) {
   const authHeader = req.headers.get('authorization')

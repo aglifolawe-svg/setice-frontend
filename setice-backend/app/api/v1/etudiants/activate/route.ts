@@ -6,7 +6,8 @@ import { User } from "@/src/entities/User"
 import { hashPassword } from "@/src/lib/password"
 import { sendActivationEmail } from "@/src/lib/mail"
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 interface ActivatePayload {
   userId: string

@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken'
 import { createFormateur, getFormateurs } from '@/src/services/formateur.service'
 import { createFormateurSchema } from '@/src/schemas/formateur.schema'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 export async function POST(req: NextRequest) {
   try {

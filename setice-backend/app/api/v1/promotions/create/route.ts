@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken'
 import { createPromotion, getPromotions } from '@/src/services/promotion.service'
 import { createPromotionSchema } from '@/src/schemas/promotion.schema'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 export async function GET(req: NextRequest) {
   try {

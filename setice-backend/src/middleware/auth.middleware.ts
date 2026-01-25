@@ -1,7 +1,8 @@
 
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 export interface JwtPayload {
   id: string

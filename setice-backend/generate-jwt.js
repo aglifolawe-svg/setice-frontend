@@ -6,7 +6,7 @@ const payload = {
   role: 'FORMATEUR', // FORMATEUR | ETUDIANT | DIRECTEUR_ETUDES
 }
 
-const secret = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+
 
 const token = jwt.sign(payload, secret, {
   expiresIn: '1h',

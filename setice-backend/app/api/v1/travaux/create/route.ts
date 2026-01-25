@@ -5,7 +5,8 @@ import { createTravailSchema } from '@/src/schemas/createTravail.schema'
 import { createTravail} from '@/src/services/travail.service'
 import { User } from '@/src/entities/User'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 async function getUserFromToken(req: NextRequest) {
   const authHeader = req.headers.get('authorization')

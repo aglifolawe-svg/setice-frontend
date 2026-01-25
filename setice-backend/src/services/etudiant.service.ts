@@ -9,7 +9,8 @@ import jwt from 'jsonwebtoken'
 import { sendActivationEmail } from '@/src/lib/mail'
 
 // ✅ IMPORTANT : Utilisez NEXTAUTH_SECRET (pas JWT_SECRET)
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'super-secret-key-setice-universite'
+const JWT_SECRET = process.env.JWT_SECRET!
+
 
 export async function createEtudiant(input: CreateEtudiantInput) {
   const db = await getDataSource()
