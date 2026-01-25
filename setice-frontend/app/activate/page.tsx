@@ -1,4 +1,4 @@
-// app/activate/page.tsx (page serveur)
+// app/activate/page.tsx
 import ActivateForm from "./ActivateForm" // composant client
 
 export default function ActivatePage() {

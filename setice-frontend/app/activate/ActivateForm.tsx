@@ -1,8 +1,7 @@
-// app/activate/ActivateForm.tsx
 'use client'
 
-import { useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "react-hot-toast"
@@ -39,11 +38,9 @@ export default function ActivateForm() {
       if (!data.success) throw new Error(data.error || "Activation échouée")
 
       toast.success("✅ Compte activé avec succès !")
-      setTimeout(() => {
-        window.location.href = `/login?activated=${Date.now()}`
-      }, 1500)
+      setTimeout(() => window.location.href = `/login?activated=${Date.now()}`, 1500)
     } catch (err: any) {
-      console.error("❌ Erreur activation :", err)
+      console.error(err)
       toast.error(err.message || "Erreur lors de l'activation")
       setIsLoading(false)
     }
@@ -60,7 +57,6 @@ export default function ActivateForm() {
         onChange={(e) => setPassword(e.target.value)}
         className="mb-3"
         disabled={isLoading}
-        autoComplete="new-password"
       />
       <Input
         type="password"
@@ -69,7 +65,6 @@ export default function ActivateForm() {
         onChange={(e) => setConfirmPassword(e.target.value)}
         className="mb-4"
         disabled={isLoading}
-        autoComplete="new-password"
       />
 
       <Button onClick={handleActivate} disabled={isLoading} className="w-full">
