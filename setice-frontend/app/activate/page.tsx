@@ -1,78 +1,91 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { toast } from "react-hot-toast"
 
 export default function ActivatePage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const token = searchParams.get('token') || ''
+  const [token, setToken] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [newPassword, setNewPassword] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
+  // ✅ Récupère le token après le rendu initial pour éviter le warning Suspense
+  useEffect(() => {
+    const t = searchParams.get("token")
+    if (t) setToken(t)
+  }, [searchParams])
 
   const handleActivate = async () => {
     if (!token) {
-      setStatus('error')
-      setMessage('Token manquant dans l’URL.')
+      toast.error("Token manquant dans l'URL")
+      return
+    }
+    if (!password || !confirmPassword) {
+      toast.error("Veuillez remplir tous les champs")
+      return
+    }
+    if (password !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas")
       return
     }
 
-    if (!newPassword) {
-      setStatus('error')
-      setMessage('Veuillez entrer un nouveau mot de passe.')
-      return
-    }
+    setIsLoading(true)
 
     try {
-      setStatus('loading')
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/etudiants/activate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword }),
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://upstack-react-base.onrender.com/api/v1"
+      const res = await fetch(`${API_URL}/etudiants/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword: password }),
       })
-
       const data = await res.json()
-      if (res.ok) {
-        setStatus('success')
-        setMessage('✅ Votre compte a été activé avec succès !')
-        setTimeout(() => router.push('/login'), 3000) // redirige vers login
-      } else {
-        setStatus('error')
-        setMessage('❌ Erreur : ' + (data.error || 'Impossible d’activer le compte.'))
-      }
+
+      if (!data.success) throw new Error(data.error || "Activation échouée")
+
+      toast.success("✅ Compte activé avec succès !")
+
+      setTimeout(() => {
+        window.location.href = `/login?activated=${Date.now()}`
+      }, 1500)
     } catch (err: any) {
-      setStatus('error')
-      setMessage('❌ Erreur réseau : ' + err.message)
+      console.error("❌ Erreur activation :", err)
+      toast.error(err.message || "Erreur lors de l'activation")
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 border rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Activation du compte</h1>
-      <p className="mb-4">
-        Entrez un nouveau mot de passe pour activer votre compte formateur.
-      </p>
-      <input
-        type="password"
-        placeholder="Nouveau mot de passe"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        className="w-full p-2 mb-4 border rounded"
-      />
-      <button
-        onClick={handleActivate}
-        disabled={status === 'loading'}
-        className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        {status === 'loading' ? 'Activation en cours...' : 'Activer mon compte'}
-      </button>
-      {message && (
-        <p className={`mt-4 ${status === 'error' ? 'text-red-600' : 'text-green-600'}`}>
-          {message}
-        </p>
-      )}
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <h1 className="text-xl font-semibold mb-4">Activation du compte</h1>
+
+        <Input
+          type="password"
+          placeholder="Nouveau mot de passe"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mb-3"
+          disabled={isLoading}
+          autoComplete="new-password"
+        />
+        <Input
+          type="password"
+          placeholder="Confirmer le mot de passe"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="mb-4"
+          disabled={isLoading}
+          autoComplete="new-password"
+        />
+
+        <Button onClick={handleActivate} disabled={isLoading} className="w-full">
+          {isLoading ? "Activation en cours..." : "Activer mon compte"}
+        </Button>
+      </div>
     </div>
   )
 }
