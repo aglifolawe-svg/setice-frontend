@@ -72,7 +72,7 @@ function ActivateForm() {
       />
       <Input
         type="password"
-        placeholder="Confirmer le mot de passe"
+        placeholder="Confirmer votre  passe"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         className="mb-4"
