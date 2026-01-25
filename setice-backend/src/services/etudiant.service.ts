@@ -103,7 +103,7 @@ console.log('✅ [SERVICE] Token complet length:', token.length)
 
   // 8️⃣ Envoyer l'email d'activation
   try {
-    await sendActivationEmail(user.email, matricule, tempPassword, token)
+    await sendActivationEmail(user.email,  tempPassword, token)
     console.log('✅ [SERVICE] Email d\'activation envoyé à:', user.email)
   } catch (emailError) {
     console.error('❌ [SERVICE] Erreur envoi email:', emailError)

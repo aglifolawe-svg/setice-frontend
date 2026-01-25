@@ -1,35 +1,47 @@
 // lib/mail.ts
 import sgMail from "@sendgrid/mail";
 
-export async function sendActivationEmail(email: string, tempPassword: string, token: string) {
-  const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY!;
-  const SMTP_FROM = process.env.SMTP_FROM!;
-  const FRONTEND_URL = process.env.FRONTEND_URL!;
-
-  sgMail.setApiKey(SENDGRID_API_KEY);
-
-  const activationLink = `${FRONTEND_URL}/activate?token=${token}`;
+export async function sendActivationEmail(
+  email: string,
+  tempPassword: string,
+  activationToken: string  // ← Le JWT
+) {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://relaxed-selkie-3ef8a0.netlify.app'
+  
+  // ✅ IMPORTANT : Utiliser activationToken (JWT), pas tempPassword !
+  const activationLink = `${frontendUrl}/activate?token=${activationToken}`
 
   const msg = {
     to: email,
-    from: SMTP_FROM,
-    subject: "Activation de votre compte SETICE",
+    from: process.env.SENDGRID_FROM_EMAIL!,
+    subject: 'Activez votre compte',
     html: `
-      <p>Bonjour,</p>
-      <p>Votre compte a été créé avec succès.</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Mot de passe temporaire:</strong> ${tempPassword}</p>
-      <p>Cliquez sur le lien pour activer votre compte et choisir votre mot de passe :</p>
-      <a href="${activationLink}">Activer mon compte</a>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Bienvenue !</h2>
+        <p>Votre compte a été créé avec succès.</p>
+        
+        <p><strong>Votre mot de passe temporaire :</strong> ${tempPassword}</p>
+        
+        <p>Pour activer votre compte, cliquez sur le bouton ci-dessous :</p>
+        
+        <a href="${activationLink}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; 
+                  color: white; text-decoration: none; border-radius: 4px; margin: 20px 0;">
+          Activer mon compte
+        </a>
+        
+        <p style="color: #666; font-size: 12px;">
+          Ce lien est valable pendant 24 heures.
+        </p>
+        
+        <p style="color: #666; font-size: 12px;">
+          Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br>
+          <a href="${activationLink}">${activationLink}</a>
+        </p>
+      </div>
     `,
-  };
-
-  try {
-    const response = await sgMail.send(msg);
-    console.log(`✅ Email envoyé à ${email} via SendGrid ! Status: ${response[0].statusCode}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error("❌ Erreur SendGrid:", error.message || error);
-    throw error;
   }
+
+  await sgMail.send(msg)
+  console.log('✅ [EMAIL] Email envoyé à', email)
 }
