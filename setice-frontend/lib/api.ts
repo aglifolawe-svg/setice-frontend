@@ -124,6 +124,27 @@ class ApiClient {
     })
   }
 
+  // ✅ NOUVELLE FONCTION DELETE ETUDIANT
+  async deleteEtudiant(etudiantId: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/etudiants/create?id=${etudiantId}`, {
+      method: "DELETE",
+    })
+  }
+
+  // ✅ NOUVELLE FONCTION UPDATE ETUDIANT
+  async updateEtudiant(etudiantId: string, data: {
+    nom?: string
+    prenom?: string
+    email?: string
+    promotionId?: string
+    matricule?: string
+  }): Promise<ApiResponse<Etudiant>> {
+    return this.request<Etudiant>("/etudiants/create", {
+      method: "PUT",
+      body: JSON.stringify({ id: etudiantId, ...data }),
+    })
+  }
+
   async getEtudiantsAssignables(espacePedagogiqueId: string): Promise<ApiResponse<Etudiant[]>> {
     console.log("📡 [API] getEtudiantsAssignables - espacePedagogiqueId:", espacePedagogiqueId)
     

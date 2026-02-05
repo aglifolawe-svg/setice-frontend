@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,15 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
-import { useEtudiants, usePromotions } from "@/hooks/use-data"
+import { usePromotions } from "@/hooks/use-data"
+import { useEtudiants } from "@/hooks/useEtudiants"
+import type { Etudiant } from "@/types"
 
 interface CreateEtudiantModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  editingEtudiant?: Etudiant | null
 }
 
-export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalProps) {
-  const { mutate } = useEtudiants()
+export function CreateEtudiantModal({ open, onOpenChange, editingEtudiant }: CreateEtudiantModalProps) {
+  const { refetch, updateEtudiant } = useEtudiants()
   const { promotions, isLoading: loadingPromotions } = usePromotions()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -29,8 +32,33 @@ export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalP
     prenom: "",
     email: "",
     promotionId: "",
+    matricule: "",
     temporaryPassword: "",
   })
+
+  // ✅ Pré-remplir le formulaire en mode édition
+  useEffect(() => {
+    if (editingEtudiant) {
+      setFormData({
+        nom: editingEtudiant.user.nom,
+        prenom: editingEtudiant.user.prenom,
+        email: editingEtudiant.user.email,
+        promotionId: editingEtudiant.promotion?.id || "",
+        matricule: editingEtudiant.matricule,
+        temporaryPassword: "",
+      })
+    } else {
+      setFormData({
+        nom: "",
+        prenom: "",
+        email: "",
+        promotionId: "",
+        matricule: "",
+        temporaryPassword: "",
+      })
+    }
+    setErrors({})
+  }, [editingEtudiant, open])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -59,24 +87,61 @@ export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalP
     setLoading(true)
     setErrors({})
 
-    const result = await api.createEtudiant(formData)
+    try {
+      if (editingEtudiant) {
+        // ✅ MODE MODIFICATION
+        const result = await updateEtudiant(editingEtudiant.id, {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          promotionId: formData.promotionId,
+          matricule: formData.matricule,
+        })
 
-    if (result.success) {
-      toast.success("Étudiant créé avec succès !")
-      mutate()
-      onOpenChange(false)
-      setFormData({ nom: "", prenom: "", email: "", promotionId: "", temporaryPassword: "" })
-    } else {
-      if (result.error?.toLowerCase().includes("email")) {
-        setErrors({ email: "Cet email est déjà utilisé" })
-      } else if (result.error?.toLowerCase().includes("promotion")) {
-        setErrors({ promotionId: "Promotion invalide" })
+        if (result.success) {
+          toast.success("Étudiant modifié avec succès !")
+          onOpenChange(false)
+        } else {
+          if (result.error?.toLowerCase().includes("email")) {
+            setErrors({ email: "Cet email est déjà utilisé" })
+          } else if (result.error?.toLowerCase().includes("matricule")) {
+            setErrors({ matricule: "Ce matricule est déjà utilisé" })
+          } else if (result.error?.toLowerCase().includes("promotion")) {
+            setErrors({ promotionId: "Promotion invalide" })
+          } else {
+            toast.error(result.error || "Erreur lors de la modification")
+          }
+        }
       } else {
-        toast.error(result.error || "Erreur lors de la création")
-      }
-    }
+        // ✅ MODE CRÉATION
+        const result = await api.createEtudiant({
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          promotionId: formData.promotionId,
+          temporaryPassword: formData.temporaryPassword || undefined,
+        })
 
-    setLoading(false)
+        if (result.success) {
+          toast.success("Étudiant créé avec succès !")
+          refetch()
+          onOpenChange(false)
+          setFormData({ nom: "", prenom: "", email: "", promotionId: "", matricule: "", temporaryPassword: "" })
+        } else {
+          if (result.error?.toLowerCase().includes("email")) {
+            setErrors({ email: "Cet email est déjà utilisé" })
+          } else if (result.error?.toLowerCase().includes("promotion")) {
+            setErrors({ promotionId: "Promotion invalide" })
+          } else {
+            toast.error(result.error || "Erreur lors de la création")
+          }
+        }
+      }
+    } catch (error) {
+      toast.error("Une erreur est survenue")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -90,7 +155,7 @@ export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Créer un étudiant</DialogTitle>
+          <DialogTitle>{editingEtudiant ? "Modifier l'étudiant" : "Créer un étudiant"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -155,26 +220,44 @@ export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalP
               </p>
             )}
           </div>
-          {/* Mot de passe temporaire */}
-          <div className="space-y-2">
-            <Label htmlFor="temporaryPassword">
-              Mot de passe temporaire
-            </Label>
-            <Input
-             id="temporaryPassword"
-             type="password"
-             value={formData.temporaryPassword}
-             onChange={(e) => handleChange("temporaryPassword", e.target.value)}
-             placeholder="Laisser vide pour génération automatique"
-            />
-           <p className="text-xs text-muted-foreground">
-             Ce mot de passe sera envoyé par email à l’étudiant.  
-             S’il est vide, un mot de passe sécurisé sera généré automatiquement.
-           </p>
-         </div>
 
+          {/* Matricule (en mode édition seulement) */}
+          {editingEtudiant && (
+            <div className="space-y-2">
+              <Label htmlFor="matricule">Matricule</Label>
+              <Input
+                id="matricule"
+                value={formData.matricule}
+                onChange={(e) => handleChange("matricule", e.target.value)}
+                placeholder="AUTO-2024-001"
+                className={errors.matricule ? "border-destructive" : ""}
+              />
+              {errors.matricule && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.matricule}
+                </p>
+              )}
+            </div>
+          )}
 
-          
+          {/* Mot de passe temporaire (en mode création seulement) */}
+          {!editingEtudiant && (
+            <div className="space-y-2">
+              <Label htmlFor="temporaryPassword">Mot de passe temporaire</Label>
+              <Input
+                id="temporaryPassword"
+                type="password"
+                value={formData.temporaryPassword}
+                onChange={(e) => handleChange("temporaryPassword", e.target.value)}
+                placeholder="Laisser vide pour génération automatique"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ce mot de passe sera envoyé par email à l'étudiant. S'il est vide, un mot de passe sécurisé sera
+                généré automatiquement.
+              </p>
+            </div>
+          )}
 
           {/* Promotion */}
           <div className="space-y-2">
@@ -209,8 +292,10 @@ export function CreateEtudiantModal({ open, onOpenChange }: CreateEtudiantModalP
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Création...
+                  {editingEtudiant ? "Modification..." : "Création..."}
                 </>
+              ) : editingEtudiant ? (
+                "Modifier"
               ) : (
                 "Créer"
               )}

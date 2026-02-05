@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { api } from "@/lib/api" // ou l'endroit où vous exportez votre client API
+import { api } from "@/lib/api"
 import type { Etudiant } from "@/types"
 
 export function useEtudiants() {
@@ -14,7 +14,6 @@ export function useEtudiants() {
     setError(null)
 
     try {
-      // ✅ Utiliser votre client API qui gère déjà le token
       const response = await api.getEtudiants()
       
       if (!response.success) {
@@ -35,9 +34,59 @@ export function useEtudiants() {
     }
   }, [])
 
+  // ✅ FONCTION DELETE
+  const deleteEtudiant = useCallback(async (etudiantId: string) => {
+    try {
+      const response = await api.deleteEtudiant(etudiantId)
+      
+      if (!response.success) {
+        throw new Error(response.error || "Erreur lors de la suppression")
+      }
+
+      // Met à jour la liste localement
+      setEtudiants(prev => prev.filter(e => e.id !== etudiantId))
+      
+      return { success: true }
+    } catch (err: any) {
+      console.error("Erreur lors de la suppression:", err)
+      return { success: false, error: err.message }
+    }
+  }, [])
+
+  // ✅ FONCTION UPDATE (CORRIGÉE avec typage explicite)
+  const updateEtudiant = useCallback(async (etudiantId: string, data: any) => {
+    try {
+      const response = await api.updateEtudiant(etudiantId, data)
+      
+      if (!response.success) {
+        throw new Error(response.error || "Erreur lors de la modification")
+      }
+
+      // ✅ Typage explicite pour éviter les erreurs TypeScript
+      const updatedEtudiant = response.data as Etudiant
+
+      // Met à jour la liste localement
+      setEtudiants(prev => 
+        prev.map(e => e.id === etudiantId ? updatedEtudiant : e)
+      )
+      
+      return { success: true, data: updatedEtudiant }
+    } catch (err: any) {
+      console.error("Erreur lors de la modification:", err)
+      return { success: false, error: err.message }
+    }
+  }, [])
+
   useEffect(() => {
     fetchEtudiants()
   }, [fetchEtudiants])
 
-  return { etudiants, isLoading, error, refetch: fetchEtudiants }
+  return { 
+    etudiants, 
+    isLoading, 
+    error, 
+    refetch: fetchEtudiants,
+    deleteEtudiant,
+    updateEtudiant
+  }
 }

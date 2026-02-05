@@ -109,6 +109,7 @@ export interface CreateEtudiantData {
   prenom: string
   email: string
   promotionId: string
+  temporaryPassword?: string
 }
 
 export interface CreateMatiereData {
