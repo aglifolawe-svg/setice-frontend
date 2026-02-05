@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
 import { usePromotions } from "@/hooks/use-data"
 import { useEtudiants } from "@/hooks/useEtudiants"
 import type { Etudiant } from "@/types"
@@ -22,7 +21,7 @@ interface CreateEtudiantModalProps {
 }
 
 export function CreateEtudiantModal({ open, onOpenChange, editingEtudiant }: CreateEtudiantModalProps) {
-  const { refetch, updateEtudiant } = useEtudiants()
+  const { updateEtudiant, createEtudiant } = useEtudiants()
   const { promotions, isLoading: loadingPromotions } = usePromotions()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -113,8 +112,8 @@ export function CreateEtudiantModal({ open, onOpenChange, editingEtudiant }: Cre
           }
         }
       } else {
-        // ✅ MODE CRÉATION
-        const result = await api.createEtudiant({
+        // ✅ MODE CRÉATION - UTILISE createEtudiant au lieu de api.createEtudiant
+        const result = await createEtudiant({
           nom: formData.nom,
           prenom: formData.prenom,
           email: formData.email,
@@ -124,7 +123,6 @@ export function CreateEtudiantModal({ open, onOpenChange, editingEtudiant }: Cre
 
         if (result.success) {
           toast.success("Étudiant créé avec succès !")
-          refetch()
           onOpenChange(false)
           setFormData({ nom: "", prenom: "", email: "", promotionId: "", matricule: "", temporaryPassword: "" })
         } else {

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -9,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
-import { useMatieres } from "@/hooks/use-data"
+import { useMatieres } from "@/hooks/useMatieres"
 
 interface CreateMatiereModalProps {
   open: boolean
@@ -18,7 +16,7 @@ interface CreateMatiereModalProps {
 }
 
 export function CreateMatiereModal({ open, onOpenChange }: CreateMatiereModalProps) {
-  const { mutate } = useMatieres()
+  const { createMatiere } = useMatieres()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -32,13 +30,13 @@ export function CreateMatiereModal({ open, onOpenChange }: CreateMatiereModalPro
     const newErrors: Record<string, string> = {}
 
     if (!formData.code || formData.code.length < 2) {
-      newErrors.code = "Le code est requis"
+      newErrors.code = "Le code doit contenir au moins 2 caractères"
     }
     if (!formData.libelle || formData.libelle.length < 3) {
-      newErrors.libelle = "Le libellé est requis"
+      newErrors.libelle = "Le libellé doit contenir au moins 3 caractères"
     }
     if (!formData.credits || isNaN(Number(formData.credits)) || Number(formData.credits) < 1) {
-      newErrors.credits = "Crédits invalides (minimum 1)"
+      newErrors.credits = "Les crédits doivent être un nombre supérieur ou égal à 1"
     }
 
     setErrors(newErrors)
@@ -52,26 +50,29 @@ export function CreateMatiereModal({ open, onOpenChange }: CreateMatiereModalPro
     setLoading(true)
     setErrors({})
 
-    const result = await api.createMatiere({
-      code: formData.code,
-      libelle: formData.libelle,
-      credits: Number(formData.credits),
-    })
+    try {
+      const result = await createMatiere({
+        code: formData.code,
+        libelle: formData.libelle,
+        credits: Number(formData.credits),
+      })
 
-    if (result.success) {
-      toast.success("Matière créée avec succès !")
-      mutate()
-      onOpenChange(false)
-      setFormData({ code: "", libelle: "", credits: "" })
-    } else {
-      if (result.error?.toLowerCase().includes("code")) {
-        setErrors({ code: "Ce code existe déjà" })
+      if (result.success) {
+        toast.success("Matière créée avec succès !")
+        onOpenChange(false)
+        setFormData({ code: "", libelle: "", credits: "" })
       } else {
-        toast.error(result.error || "Erreur lors de la création")
+        if (result.error?.toLowerCase().includes("code")) {
+          setErrors({ code: "Ce code est déjà utilisé" })
+        } else {
+          toast.error(result.error || "Erreur lors de la création")
+        }
       }
+    } catch (error) {
+      toast.error("Une erreur est survenue")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleChange = (field: keyof typeof formData, value: string) => {

@@ -34,6 +34,27 @@ export function useEtudiants() {
     }
   }, [])
 
+  // ✅ FONCTION CREATE (NOUVELLE)
+  const createEtudiant = useCallback(async (data: any) => {
+    try {
+      const response = await api.createEtudiant(data)
+      
+      if (!response.success) {
+        throw new Error(response.error || "Erreur lors de la création")
+      }
+
+      const newEtudiant = response.data as Etudiant
+
+      // ✅ Ajoute directement le nouvel étudiant à la liste
+      setEtudiants(prev => [...prev, newEtudiant])
+      
+      return { success: true, data: newEtudiant }
+    } catch (err: any) {
+      console.error("Erreur lors de la création:", err)
+      return { success: false, error: err.message }
+    }
+  }, [])
+
   // ✅ FONCTION DELETE
   const deleteEtudiant = useCallback(async (etudiantId: string) => {
     try {
@@ -53,7 +74,7 @@ export function useEtudiants() {
     }
   }, [])
 
-  // ✅ FONCTION UPDATE (CORRIGÉE avec typage explicite)
+  // ✅ FONCTION UPDATE
   const updateEtudiant = useCallback(async (etudiantId: string, data: any) => {
     try {
       const response = await api.updateEtudiant(etudiantId, data)
@@ -62,7 +83,6 @@ export function useEtudiants() {
         throw new Error(response.error || "Erreur lors de la modification")
       }
 
-      // ✅ Typage explicite pour éviter les erreurs TypeScript
       const updatedEtudiant = response.data as Etudiant
 
       // Met à jour la liste localement
@@ -86,6 +106,7 @@ export function useEtudiants() {
     isLoading, 
     error, 
     refetch: fetchEtudiants,
+    createEtudiant,    // ✅ AJOUTÉ ICI
     deleteEtudiant,
     updateEtudiant
   }

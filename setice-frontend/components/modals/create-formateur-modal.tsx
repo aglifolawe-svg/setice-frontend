@@ -1,25 +1,24 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
-import { useFormateurs } from "@/hooks/use-data"
-import { te } from "date-fns/locale"
+import { useFormateurs } from "@/hooks/useFormateurs"
+import type { Formateur } from "@/types"
 
 interface CreateFormateurModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  editingFormateur?: Formateur | null
 }
 
-export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModalProps) {
-  const { mutate } = useFormateurs()
+export function CreateFormateurModal({ open, onOpenChange, editingFormateur }: CreateFormateurModalProps) {
+  const { createFormateur, updateFormateur } = useFormateurs()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -30,6 +29,28 @@ export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModa
     specialite: "",
     temporaryPassword: "",
   })
+
+  // ✅ Pré-remplir le formulaire en mode édition
+  useEffect(() => {
+    if (editingFormateur) {
+      setFormData({
+        nom: editingFormateur.user.nom,
+        prenom: editingFormateur.user.prenom,
+        email: editingFormateur.user.email,
+        specialite: editingFormateur.specialite || "",
+        temporaryPassword: "",
+      })
+    } else {
+      setFormData({
+        nom: "",
+        prenom: "",
+        email: "",
+        specialite: "",
+        temporaryPassword: "",
+      })
+    }
+    setErrors({})
+  }, [editingFormateur, open])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -55,22 +76,53 @@ export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModa
     setLoading(true)
     setErrors({})
 
-    const result = await api.createFormateur(formData)
+    try {
+      if (editingFormateur) {
+        // ✅ MODE MODIFICATION
+        const result = await updateFormateur(editingFormateur.id, {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          specialite: formData.specialite,
+        })
 
-    if (result.success) {
-      toast.success("Formateur créé avec succès !")
-      mutate()
-      onOpenChange(false)
-      setFormData({ nom: "", prenom: "", email: "", specialite: "", temporaryPassword: "" })
-    } else {
-      if (result.error?.toLowerCase().includes("email")) {
-        setErrors({ email: "Cet email est déjà utilisé" })
+        if (result.success) {
+          toast.success("Formateur modifié avec succès !")
+          onOpenChange(false)
+        } else {
+          if (result.error?.toLowerCase().includes("email")) {
+            setErrors({ email: "Cet email est déjà utilisé" })
+          } else {
+            toast.error(result.error || "Erreur lors de la modification")
+          }
+        }
       } else {
-        toast.error(result.error || "Erreur lors de la création")
-      }
-    }
+        // ✅ MODE CRÉATION
+        const result = await createFormateur({
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          specialite: formData.specialite,
+          temporaryPassword: formData.temporaryPassword || undefined,
+        })
 
-    setLoading(false)
+        if (result.success) {
+          toast.success("Formateur créé avec succès !")
+          onOpenChange(false)
+          setFormData({ nom: "", prenom: "", email: "", specialite: "", temporaryPassword: "" })
+        } else {
+          if (result.error?.toLowerCase().includes("email")) {
+            setErrors({ email: "Cet email est déjà utilisé" })
+          } else {
+            toast.error(result.error || "Erreur lors de la création")
+          }
+        }
+      }
+    } catch (error) {
+      toast.error("Une erreur est survenue")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -84,7 +136,7 @@ export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Créer un compte formateur</DialogTitle>
+          <DialogTitle>{editingFormateur ? "Modifier le formateur" : "Créer un compte formateur"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -161,24 +213,23 @@ export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModa
             />
           </div>
 
-           {/* Mot de passe temporaire */}
-          <div className="space-y-2">
-            <Label htmlFor="temporaryPassword">
-              Mot de passe temporaire
-            </Label>
-            <Input
-             id="temporaryPassword"
-             type="password"
-             value={formData.temporaryPassword}
-             onChange={(e) => handleChange("temporaryPassword", e.target.value)}
-             placeholder="Laisser vide pour génération automatique"
-            />
-           <p className="text-xs text-muted-foreground">
-             Ce mot de passe sera envoyé par email à l’étudiant.  
-             S’il est vide, un mot de passe sécurisé sera généré automatiquement.
-           </p>
-         </div>
-
+          {/* Mot de passe temporaire (en mode création seulement) */}
+          {!editingFormateur && (
+            <div className="space-y-2">
+              <Label htmlFor="temporaryPassword">Mot de passe temporaire</Label>
+              <Input
+                id="temporaryPassword"
+                type="password"
+                value={formData.temporaryPassword}
+                onChange={(e) => handleChange("temporaryPassword", e.target.value)}
+                placeholder="Laisser vide pour génération automatique"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ce mot de passe sera envoyé par email au formateur. S'il est vide, un mot de passe sécurisé sera
+                généré automatiquement.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
@@ -188,8 +239,10 @@ export function CreateFormateurModal({ open, onOpenChange }: CreateFormateurModa
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Création...
+                  {editingFormateur ? "Modification..." : "Création..."}
                 </>
+              ) : editingFormateur ? (
+                "Modifier"
               ) : (
                 "Créer"
               )}

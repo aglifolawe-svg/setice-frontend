@@ -174,16 +174,35 @@ class ApiClient {
   }
 
   // -------------------- Matières --------------------
-  async getMatieres(): Promise<ApiResponse<Matiere[]>> {
-    return this.request<Matiere[]>("/matieres/create")
-  }
+  // -------------------- Matières --------------------
+async getMatieres(): Promise<ApiResponse<Matiere[]>> {
+  return this.request<Matiere[]>("/matieres/create")
+}
 
-  async createMatiere(data: CreateMatiereData): Promise<ApiResponse<Matiere>> {
-    return this.request<Matiere>("/matieres/create", {
-      method: "POST",
-      body: JSON.stringify(data),
-    })
-  }
+async createMatiere(data: CreateMatiereData): Promise<ApiResponse<Matiere>> {
+  return this.request<Matiere>("/matieres/create", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+// ✅ AJOUTE CES DEUX FONCTIONS
+async deleteMatiere(matiereId: string): Promise<ApiResponse<void>> {
+  return this.request<void>(`/matieres/create?id=${matiereId}`, {
+    method: "DELETE",
+  })
+}
+
+async updateMatiere(matiereId: string, data: {
+  code?: string
+  libelle?: string
+  credits?: number
+}): Promise<ApiResponse<Matiere>> {
+  return this.request<Matiere>("/matieres/create", {
+    method: "PUT",
+    body: JSON.stringify({ id: matiereId, ...data }),
+  })
+}
 
   // -------------------- Espaces pédagogiques --------------------
   async getEspaces(): Promise<ApiResponse<EspacePedagogique[]>> {
@@ -330,6 +349,45 @@ async getClassementPromotions(): Promise<ApiResponse<any[]>> {
 async getClassementPromotion(promotionId: string): Promise<ApiResponse<any>> {
   return this.request<any>(`/classements/${promotionId}`)
 }
+
+
+
+// ✅ AJOUTE CES DEUX FONCTIONS
+async deleteFormateur(formateurId: string): Promise<ApiResponse<void>> {
+  return this.request<void>(`/formateurs/create?id=${formateurId}`, {
+    method: "DELETE",
+  })
+}
+
+async updateFormateur(formateurId: string, data: {
+  nom?: string
+  prenom?: string
+  email?: string
+  specialite?: string
+}): Promise<ApiResponse<Formateur>> {
+  return this.request<Formateur>("/formateurs/create", {
+    method: "PUT",
+    body: JSON.stringify({ id: formateurId, ...data }),
+  })
+}
+
+async deletePromotion(promotionId: string): Promise<ApiResponse<void>> {
+  return this.request<void>(`/promotions/create?id=${promotionId}`, {
+    method: "DELETE",
+  })
+}
+
+async updatePromotion(promotionId: string, data: {
+  code?: string
+  libelle?: string
+  annee?: string
+}): Promise<ApiResponse<Promotion>> {
+  return this.request<Promotion>("/promotions/create", {
+    method: "PUT",
+    body: JSON.stringify({ id: promotionId, ...data }),
+  })
+}
+
 
 
 }

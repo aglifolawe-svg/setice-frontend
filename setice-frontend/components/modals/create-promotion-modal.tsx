@@ -1,25 +1,24 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
-import { usePromotions } from "@/hooks/use-data"
+import { usePromotions } from "@/hooks/usePromotions"
+import type { Promotion } from "@/types"
 
 interface CreatePromotionModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSuccess?: () => void
+  editingPromotion?: Promotion | null
 }
 
-export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModalProps) {
-  const { mutate } = usePromotions()
+export function CreatePromotionModal({ open, onOpenChange, editingPromotion }: CreatePromotionModalProps) {
+  const { createPromotion, updatePromotion } = usePromotions()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -29,17 +28,49 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
     annee: "",
   })
 
+  // ✅ Pré-remplir le formulaire en mode édition
+  useEffect(() => {
+    if (editingPromotion) {
+      setFormData({
+        code: editingPromotion.code,
+        libelle: editingPromotion.libelle,
+        annee: editingPromotion.annee,
+      })
+    } else {
+      setFormData({
+        code: "",
+        libelle: "",
+        annee: "",
+      })
+    }
+    setErrors({})
+  }, [editingPromotion, open])
+
   const validate = () => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.code || formData.code.length < 2) {
-      newErrors.code = "Le code est requis"
+      newErrors.code = "Le code doit contenir au moins 2 caractères"
     }
     if (!formData.libelle || formData.libelle.length < 3) {
-      newErrors.libelle = "Le libellé est requis"
+      newErrors.libelle = "Le libellé doit contenir au moins 3 caractères"
     }
+
+    // ✅ Validation de l'année académique
     if (!formData.annee || !/^\d{4}-\d{4}$/.test(formData.annee)) {
-      newErrors.annee = "Format: 2024-2025"
+      newErrors.annee = "Format requis: 2025-2026"
+    } else {
+      const [anneeDebut, anneeFin] = formData.annee.split("-").map(Number)
+      const currentYear = new Date().getFullYear()
+
+      // Vérifier que l'année de fin = année de début + 1
+      if (anneeFin !== anneeDebut + 1) {
+        newErrors.annee = "L'année de fin doit être l'année suivante (ex: 2025-2026)"
+      }
+      // Vérifier que l'année de début >= année actuelle
+      else if (anneeDebut < currentYear) {
+        newErrors.annee = `L'année doit commencer à partir de ${currentYear} (ex: ${currentYear}-${currentYear + 1})`
+      }
     }
 
     setErrors(newErrors)
@@ -53,22 +84,42 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
     setLoading(true)
     setErrors({})
 
-    const result = await api.createPromotion(formData)
+    try {
+      if (editingPromotion) {
+        // ✅ MODE MODIFICATION
+        const result = await updatePromotion(editingPromotion.id, formData)
 
-    if (result.success) {
-      toast.success("Promotion créée avec succès !")
-      mutate()
-      onOpenChange(false)
-      setFormData({ code: "", libelle: "", annee: "" })
-    } else {
-      if (result.error?.toLowerCase().includes("code")) {
-        setErrors({ code: "Ce code existe déjà" })
+        if (result.success) {
+          toast.success("Promotion modifiée avec succès !")
+          onOpenChange(false)
+        } else {
+          if (result.error?.toLowerCase().includes("code")) {
+            setErrors({ code: "Ce code est déjà utilisé" })
+          } else {
+            toast.error(result.error || "Erreur lors de la modification")
+          }
+        }
       } else {
-        toast.error(result.error || "Erreur lors de la création")
-      }
-    }
+        // ✅ MODE CRÉATION
+        const result = await createPromotion(formData)
 
-    setLoading(false)
+        if (result.success) {
+          toast.success("Promotion créée avec succès !")
+          onOpenChange(false)
+          setFormData({ code: "", libelle: "", annee: "" })
+        } else {
+          if (result.error?.toLowerCase().includes("code")) {
+            setErrors({ code: "Ce code est déjà utilisé" })
+          } else {
+            toast.error(result.error || "Erreur lors de la création")
+          }
+        }
+      }
+    } catch (error) {
+      toast.error("Une erreur est survenue")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -82,7 +133,7 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Créer une promotion</DialogTitle>
+          <DialogTitle>{editingPromotion ? "Modifier la promotion" : "Créer une promotion"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,7 +187,7 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
               id="annee"
               value={formData.annee}
               onChange={(e) => handleChange("annee", e.target.value)}
-              placeholder="2024-2025"
+              placeholder={`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`}
               className={errors.annee ? "border-destructive" : ""}
             />
             {errors.annee && (
@@ -145,6 +196,9 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
                 {errors.annee}
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              Format: YYYY-YYYY (ex: {new Date().getFullYear()}-{new Date().getFullYear() + 1})
+            </p>
           </div>
 
           <DialogFooter>
@@ -155,8 +209,10 @@ export function CreatePromotionModal({ open, onOpenChange }: CreatePromotionModa
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Création...
+                  {editingPromotion ? "Modification..." : "Création..."}
                 </>
+              ) : editingPromotion ? (
+                "Modifier"
               ) : (
                 "Créer"
               )}

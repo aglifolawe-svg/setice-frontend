@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -48,8 +47,22 @@ export function CreateEspaceModal({ open, onOpenChange }: CreateEspaceModalProps
     if (!formData.formateurId) {
       newErrors.formateurId = "Veuillez sélectionner un formateur"
     }
+
+    // ✅ Validation de l'année académique
     if (!formData.annee || !/^\d{4}-\d{4}$/.test(formData.annee)) {
-      newErrors.annee = "Format: 2024-2025"
+      newErrors.annee = "Format requis: 2025-2026"
+    } else {
+      const [anneeDebut, anneeFin] = formData.annee.split("-").map(Number)
+      const currentYear = new Date().getFullYear()
+
+      // Vérifier que l'année de fin = année de début + 1
+      if (anneeFin !== anneeDebut + 1) {
+        newErrors.annee = "L'année de fin doit être l'année suivante (ex: 2025-2026)"
+      }
+      // Vérifier que l'année de début >= année actuelle
+      else if (anneeDebut < currentYear) {
+        newErrors.annee = `L'année doit commencer à partir de ${currentYear} (ex: ${currentYear}-${currentYear + 1})`
+      }
     }
 
     setErrors(newErrors)
@@ -63,18 +76,22 @@ export function CreateEspaceModal({ open, onOpenChange }: CreateEspaceModalProps
     setLoading(true)
     setErrors({})
 
-    const result = await api.createEspace(formData)
+    try {
+      const result = await api.createEspace(formData)
 
-    if (result.success) {
-      toast.success("Espace pédagogique créé avec succès !")
-      mutate()
-      onOpenChange(false)
-      setFormData({ promotionId: "", matiereId: "", formateurId: "", annee: "" })
-    } else {
-      toast.error(result.error || "Erreur lors de la création")
+      if (result.success) {
+        toast.success("Espace pédagogique créé avec succès !")
+        mutate()
+        onOpenChange(false)
+        setFormData({ promotionId: "", matiereId: "", formateurId: "", annee: "" })
+      } else {
+        toast.error(result.error || "Erreur lors de la création")
+      }
+    } catch (error) {
+      toast.error("Une erreur est survenue")
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -189,7 +206,7 @@ export function CreateEspaceModal({ open, onOpenChange }: CreateEspaceModalProps
                 id="annee"
                 value={formData.annee}
                 onChange={(e) => handleChange("annee", e.target.value)}
-                placeholder="2024-2025"
+                placeholder={`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`}
                 className={errors.annee ? "border-destructive" : ""}
               />
               {errors.annee && (
@@ -198,6 +215,9 @@ export function CreateEspaceModal({ open, onOpenChange }: CreateEspaceModalProps
                   {errors.annee}
                 </p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Format: YYYY-YYYY (ex: {new Date().getFullYear()}-{new Date().getFullYear() + 1})
+              </p>
             </div>
 
             <DialogFooter>
