@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useState, useMemo } from "react"
-import { Plus, Mail, Search } from "lucide-react"
+import { Plus, Mail, Search, Trash2, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -10,13 +10,15 @@ import { usePromotions } from "@/hooks/use-data"
 import { CreateEtudiantModal } from "@/components/modals/create-etudiant-modal"
 import type { Etudiant } from "@/types"
 import { useEtudiants } from "@/hooks/useEtudiants"
+import { toast } from "sonner"
 
 function EtudiantsContent() {
-  const { etudiants, isLoading } = useEtudiants()
+  const { etudiants, isLoading, deleteEtudiant } = useEtudiants()
   const { promotions } = usePromotions()
   const [searchQuery, setSearchQuery] = useState("")
   const [promotionFilter, setPromotionFilter] = useState("all")
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingEtudiant, setEditingEtudiant] = useState<Etudiant | null>(null)
 
   // ✅ Filtrage avec accès à e.user
   const filteredEtudiants = useMemo(() => {
@@ -34,6 +36,27 @@ function EtudiantsContent() {
     })
   }, [etudiants, searchQuery, promotionFilter])
 
+  // ✅ Fonction de suppression
+  const handleDelete = async (etudiant: Etudiant) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${etudiant.user.prenom} ${etudiant.user.nom} ?`)) {
+      return
+    }
+
+    const result = await deleteEtudiant(etudiant.id)
+    
+    if (result.success) {
+      toast.success("Étudiant supprimé avec succès")
+    } else {
+      toast.error(result.error || "Erreur lors de la suppression")
+    }
+  }
+
+  // ✅ Fonction de modification
+  const handleEdit = (etudiant: Etudiant) => {
+    setEditingEtudiant(etudiant)
+    setShowCreateModal(true)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -42,7 +65,10 @@ function EtudiantsContent() {
           <h1 className="text-2xl font-semibold text-foreground">Étudiants</h1>
           <p className="mt-1 text-sm text-muted-foreground">Gérez les comptes étudiants</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
+        <Button onClick={() => {
+          setEditingEtudiant(null)
+          setShowCreateModal(true)
+        }}>
           <Plus className="mr-2 h-4 w-4" />
           Créer
         </Button>
@@ -103,6 +129,7 @@ function EtudiantsContent() {
             <div className="w-28 text-xs font-medium uppercase tracking-wider text-muted-foreground">Matricule</div>
             <div className="w-32 text-xs font-medium uppercase tracking-wider text-muted-foreground">Promotion</div>
             <div className="w-24 text-xs font-medium uppercase tracking-wider text-muted-foreground">Statut</div>
+            <div className="w-24 text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</div>
           </div>
 
           {/* Rows */}
@@ -135,6 +162,24 @@ function EtudiantsContent() {
                     {e.actif ? "Actif" : "Inactif"}
                   </span>
                 </div>
+                <div className="w-24 flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
+                    onClick={() => handleEdit(e)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDelete(e)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -142,7 +187,14 @@ function EtudiantsContent() {
       )}
 
       {/* Modal */}
-      <CreateEtudiantModal open={showCreateModal} onOpenChange={setShowCreateModal} />
+      <CreateEtudiantModal 
+        open={showCreateModal} 
+        onOpenChange={(open) => {
+          setShowCreateModal(open)
+          if (!open) setEditingEtudiant(null)
+        }}
+        editingEtudiant={editingEtudiant}
+      />
     </div>
   )
 }
